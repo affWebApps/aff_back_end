@@ -1,5 +1,4 @@
 # AFF Back End
-Backend for AFF. NodeJS, NestJS, PostgreSQL, Typescript
 
 
 <p align="center">
@@ -28,7 +27,7 @@ Backend for AFF. NodeJS, NestJS, PostgreSQL, Typescript
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Backend for AFF. NodeJS, NestJS, PostgreSQL, Typescript
 
 ## Project setup
 
