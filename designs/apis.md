@@ -1,4 +1,4 @@
-1) Auth & Account Security
+## Auth & Account Security
 
 POST /v1/auth/register – email/password signup (optional invite code).
 
@@ -18,7 +18,7 @@ POST /v1/auth/change-password – (authed) current→new.
 
 (Optional 2FA) POST /v1/auth/otp/request, POST /v1/auth/otp/verify.
 
-2) Users, Roles, Profile
+## Users, Roles, Profile
 
 GET /v1/users/me
 
@@ -34,7 +34,7 @@ GET /v1/users/:id/portfolio – designs/products summary.
 
 GET /v1/users/:id/reviews – aggregate + list.
 
-3) Notification Center & Preferences
+## Notification Center & Preferences
 
 GET /v1/notifications?status=unread|all&cursor= – in-app feed.
 
@@ -48,7 +48,7 @@ PUT /v1/notification-preferences – per category/channel.
 
 (Internal) POST /v1/internal/events – publish domain event (service→orchestrator).
 
-4) Messaging (Designer ↔ Tailor)
+## Messaging (Designer ↔ Tailor)
 
 POST /v1/threads – { participants:[userIds], projectId? }
 
@@ -60,7 +60,7 @@ POST /v1/threads/:threadId/messages – text + attachments.
 
 WebSocket: /ws – join user room, thread rooms; typing, read receipts.
 
-5) Designs (Parametric studio outputs)
+## Designs (Parametric studio outputs)
 
 POST /v1/designs – create/save JSON pattern + meta; link to files.
 
@@ -78,7 +78,7 @@ POST /v1/designs/:id/share – generate share link.
 
 POST /v1/designs/:id/duplicate
 
-6) Assets & Textures
+## Assets & Textures
 
 GET /v1/assets/patterns?category= – list library entries.
 
@@ -88,7 +88,7 @@ GET /v1/assets/textures?mine=|public=
 
 (Optional) GET /v1/assets/presets – garment presets.
 
-7) Projects (service requests from Designers)
+## Projects (service requests from Designers)
 
 POST /v1/projects – title, description, designId(s), budget, deadline, requirements.
 
@@ -106,7 +106,7 @@ POST /v1/projects/:id/requirements – upload/define requirements (designer).
 
 POST /v1/projects/:id/requirements/approve – tailor/designer mutual approval.
 
-8) Bids (Tailors → Projects)
+## Bids (Tailors → Projects)
 
 POST /v1/projects/:id/bids – {amount, duration, message}
 
@@ -118,7 +118,7 @@ POST /v1/bids/:bidId/accept – designer only (auto creates order).
 
 POST /v1/bids/:bidId/reject
 
-9) Orders (created once a bid is accepted)
+## Orders (created once a bid is accepted)
 
 GET /v1/orders?buyer=me|seller=me&status=
 
@@ -136,7 +136,7 @@ POST /v1/orders/:orderId/dispute – buyer opens dispute (reason).
 
 POST /v1/orders/:orderId/cancel – rules-gated.
 
-10) Payments & Escrow (wallet-less)
+## Payments & Escrow (wallet-less)
 
 POST /v1/payments/:orderId/initiate – create gateway checkout (split delayed).
 
@@ -148,7 +148,7 @@ POST /v1/payments/:orderId/release – after approval → gateway transfer to ta
 
 POST /v1/payments/:orderId/refund – partial/full, admin or policy controlled.
 
-11) Marketplace Products (buy finished items)
+## Marketplace Products (buy finished items)
 
 POST /v1/products – seller creates item (title, price, stock, photos).
 
@@ -164,13 +164,13 @@ POST /v1/checkout/initiate – product(s) → gateway checkout with split.
 
 POST /v1/checkout/webhook – payment confirmation (non-escrow if shipped items).
 
-12) Reviews & Ratings
+## Reviews & Ratings
 
 POST /v1/orders/:orderId/reviews – one per counterpart.
 
 GET /v1/users/:id/reviews – public.
 
-13) Newsletter & System Updates
+## Newsletter & System Updates
 
 POST /v1/newsletter/subscribe
 
@@ -178,7 +178,7 @@ POST /v1/newsletter/unsubscribe
 
 POST /v1/system/announcements – admin create (in-app banner + optional email).
 
-14) Admin & Moderation
+## Admin & Moderation
 
 GET /v1/admin/users?role=&q=
 
@@ -192,12 +192,12 @@ POST /v1/admin/feature-flags – toggle flags.
 
 GET /v1/admin/audit-logs
 
-15) Files / Uploads
+## Files / Uploads
 
 POST /v1/uploads/sign – S3/R2 signed URL (design exports, deliverables).
 
 POST /v1/uploads/complete – finalize & persist metadata.
 
-16) Search (optional unified)
+## Search (optional unified)
 
 GET /v1/search?q= – users, projects, products, designs (facets).
