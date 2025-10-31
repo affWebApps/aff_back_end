@@ -1,0 +1,1 @@
+CMS for the AFF admin - FE - BE - 3rd party Payment gateway - 3rd Party Multivendor Ecommerce(SpreeCommerce) - 3rd party messaging (Supabase/FCM) - Customer Support Interface
