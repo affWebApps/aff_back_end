@@ -57,3 +57,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 .DS_Store
 docker-compose.yml
+/prisma/app

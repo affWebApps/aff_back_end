@@ -1,0 +1,462 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "app/generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://aff_user:password@localhost:5433/aff_db?schema=public"
+}
+
+
+model User {
+  id                       String      @id @default(uuid())
+  first_name               String?
+  last_name                String?
+  email                    String      @unique
+  password_hash            String
+  phone_number             String?
+  role                     String?
+  bio                      String?
+  avatar_url               String?
+  rating                   Decimal?    @db.Decimal(3,2)
+  paystack_subaccount      String?
+  country                  String?
+  city                     String?
+  display_name             String?
+  is_active                Boolean     @default(true)
+  verification_document    String?
+  is_verified              Boolean     @default(false)
+  created_at               DateTime    @default(now())
+  updated_at               DateTime    @updatedAt
+  
+  designs                  Design[]
+  projects                 Project[]   @relation("DesignerProjects")
+  bids                     Bid[]
+  portfolios               Portfolio[]
+  roles                    UserRole[]
+  permissions              Permission[]
+  notifications            Notification[]
+  auth_sessions            AuthSession[]
+  messages_sent            Message[]   @relation("SentMessages")
+  messages_received        Message[]   @relation("ReceivedMessages")
+  orders_buyer             Order[]     @relation("BuyerOrders")
+  orders_seller            Order[]     @relation("SellerOrders")
+  escrows_buyer            Escrow[]    @relation("BuyerEscrows")
+  escrows_seller           Escrow[]    @relation("SellerEscrows")
+  reviews_written          Review[]
+  admin_actions            AdminAction[]
+  support_tickets          SupportTicket[]
+  project_files            ProjectFile[]
+  order_deliveries_created OrderDelivery[]
+  transactions             Transaction[]
+  products                 Product[]
+
+  @@map("users")
+}
+
+model Design {
+  id               String   @id @default(uuid())
+  user_id          String
+  title            String
+  garment_type     String?
+  pattern_data     Json?
+  fabric_texture   String?
+  export_png_url   String?
+  export_svg_url   String?
+  export_json_url  String?
+  is_public        Boolean  @default(false)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  user             User     @relation(fields: [user_id], references: [id])
+  projects         Project[]
+
+  @@map("designs")
+}
+
+model Project {
+  id               String   @id @default(uuid())
+  designer_id      String
+  design_id        String
+  title            String
+  description      String?
+  budget           Decimal? @db.Decimal(10,2)
+  status           String?
+  deadline         DateTime?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  designer         User     @relation("DesignerProjects", fields: [designer_id], references: [id])
+  design           Design   @relation(fields: [design_id], references: [id])
+  requirements     ProjectRequirement[]
+  bids             Bid[]
+  orders           Order[]
+  files            ProjectFile[]
+  messages         Message[]
+
+  @@map("projects")
+}
+
+model ProjectRequirement {
+  id                String   @id @default(uuid())
+  project_id        String
+  content           Json?
+  designer_approved Boolean  @default(false)
+  tailor_approved   Boolean  @default(false)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  project           Project  @relation(fields: [project_id], references: [id])
+
+  @@map("project_requirements")
+}
+
+model Bid {
+  id           String   @id @default(uuid())
+  project_id   String
+  tailor_id    String
+  amount       Decimal? @db.Decimal(10,2)
+  duration     String?
+  message      String?
+  status       String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  project      Project  @relation(fields: [project_id], references: [id])
+  tailor       User     @relation(fields: [tailor_id], references: [id])
+
+  @@map("bids")
+}
+
+model Order {
+  id            String   @id @default(uuid())
+  buyer_id      String
+  seller_id     String
+  project_id    String?
+  amount        Decimal? @db.Decimal(10,2)
+  commission    Decimal? @db.Decimal(10,2)
+  status        String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  buyer         User     @relation("BuyerOrders", fields: [buyer_id], references: [id])
+  seller        User     @relation("SellerOrders", fields: [seller_id], references: [id])
+  project       Project? @relation(fields: [project_id], references: [id])
+  escrows       Escrow[]
+  deliveries    OrderDelivery[]
+  transactions  Transaction[]
+
+  @@map("orders")
+}
+
+model Escrow {
+  id             String   @id @default(uuid())
+  buyer_id       String
+  seller_id      String
+  order_id       String
+  gateway        String?
+  amount         Decimal? @db.Decimal(10,2)
+  commission     Decimal? @db.Decimal(10,2)
+  escrow_status  String?
+  payment_ref    String?
+  released_at    DateTime?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  order          Order    @relation(fields: [order_id], references: [id])
+  buyer          User     @relation("BuyerEscrows", fields: [buyer_id], references: [id])
+  seller         User     @relation("SellerEscrows", fields: [seller_id], references: [id])
+  transactions   Transaction[]
+
+  @@map("escrows")
+}
+
+model OrderDelivery {
+  id           String   @id @default(uuid())
+  delivery_id  String
+  order_id     String
+  note         String?
+  files        Json?
+  created_by   String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  order        Order    @relation(fields: [order_id], references: [id])
+  creator      User     @relation(fields: [created_by], references: [id])
+
+  @@map("order_deliveries")
+}
+
+model Message {
+  id           String   @id @default(uuid())
+  project_id   String?
+  sender_id    String
+  receiver_id  String
+  chat_id      String?
+  content      String
+  read         Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  project      Project? @relation(fields: [project_id], references: [id])
+  sender       User     @relation("SentMessages", fields: [sender_id], references: [id])
+  receiver     User     @relation("ReceivedMessages", fields: [receiver_id], references: [id])
+  chat         Chat?    @relation(fields: [chat_id], references: [id])
+
+  @@map("messages")
+}
+
+model Chat {
+  id          String     @id @default(uuid())
+  messages    Message[]
+
+  @@map("chats")
+}
+
+model Portfolio {
+  id          String   @id @default(uuid())
+  user_id     String
+  image_url   String?
+  description String?
+  title       String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  user        User     @relation(fields: [user_id], references: [id])
+
+  @@map("portfolios")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  user_id     String
+  title       String
+  message     String?
+  type        String?
+  data        Json?
+  read        Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  user        User     @relation(fields: [user_id], references: [id])
+
+  @@map("notifications")
+}
+
+model AuthSession {
+  id            String   @id @default(uuid())
+  user_id       String
+  refresh_token String
+  expires_at    DateTime?
+  device_info   String?
+  ip_address    String?
+  created_at    DateTime @default(now())
+
+  user          User     @relation(fields: [user_id], references: [id])
+
+  @@map("auth_sessions")
+}
+
+model Product {
+  id                 String   @id @default(uuid())
+  user_id            String
+  product_name       String
+  product_description String?
+  product_type       String?
+  price              Decimal? @db.Decimal(10,2)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  user               User     @relation(fields: [user_id], references: [id])
+  images             ProductImage[]
+
+  @@map("products")
+}
+
+model ProductImage {
+  id          String   @id @default(uuid())
+  product_id  String
+  image_url   String
+  is_primary  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  product     Product  @relation(fields: [product_id], references: [id])
+
+  @@map("product_images")
+}
+
+model Review {
+  id             String   @id @default(uuid())
+  reviewer_id    String
+  target_id      String
+  target_type    String
+  rating         Int
+  comment        String?
+  reviewer       User     @relation(fields: [reviewer_id], references: [id])
+
+  @@map("reviews")
+}
+
+model Transaction {
+  id               String   @id @default(uuid())
+  user_id          String
+  order_id         String?
+  escrow_id        String?
+  amount           Decimal? @db.Decimal(10,2)
+  currency         String?
+  status           String?
+  payment_gateway  String?
+  reference        String   @unique
+  metadata         Json?
+  transaction_type String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  user             User     @relation(fields: [user_id], references: [id])
+  order            Order?   @relation(fields: [order_id], references: [id])
+  escrow           Escrow?  @relation(fields: [escrow_id], references: [id])
+
+  @@map("transactions")
+}
+
+model Blog {
+  id            String   @id @default(uuid())
+  title         String
+  content       String?
+  scheduled_for DateTime?
+  status        String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  images        BlogImage[]
+
+  @@map("blogs")
+}
+
+model BlogImage {
+  id          String   @id @default(uuid())
+  blog_id     String
+  is_primary  Boolean  @default(false)
+  image_url   String
+  blog        Blog     @relation(fields: [blog_id], references: [id])
+
+  @@map("blog_images")
+}
+
+model SupportTicket {
+  id           String   @id @default(uuid())
+  user_id      String
+  order_id     String?
+  subject      String
+  description  String
+  status       String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  user         User     @relation(fields: [user_id], references: [id])
+
+  @@map("support_tickets")
+}
+
+model PlatformSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  value_type  String?
+  description String?
+  category    String?
+  updated_by  String?
+  updated_at  DateTime @updatedAt
+  created_at  DateTime @default(now())
+  is_active   Boolean  @default(true)
+  @@map("platform_settings") 
+}
+
+model AdminAction {
+  id            String   @id @default(uuid())
+  admin_id      String
+  action_type   String
+  target_table  String?
+  target_id     String?
+  old_value     Json?
+  new_value     Json?
+  created_at    DateTime @default(now())
+  admin         User     @relation(fields: [admin_id], references: [id])
+
+  @@map("admin_actions")
+}
+
+model Newsletter {
+  id          String   @id @default(uuid())
+  title       String?
+  content     String?
+  image_url   String?
+  status      String?
+  sent_at     DateTime?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("newsletters")
+}
+
+model PermissionDefinition {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String?
+  applies_to  String?
+  permissions Permission[]
+
+  @@map("permission_definitions")
+}
+
+model Permission {
+  id             String   @id @default(uuid())
+  user_id        String
+  permission_key String
+  value          Boolean
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  user           User     @relation(fields: [user_id], references: [id])
+  definition     PermissionDefinition @relation(fields: [permission_key], references: [key])
+
+  @@map("permissions")
+}
+
+model ProjectFile {
+  id           String   @id @default(uuid())
+  project_id   String
+  file_url     String
+  file_type    String?
+  uploaded_by  String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  project      Project  @relation(fields: [project_id], references: [id])
+  uploader     User     @relation(fields: [uploaded_by], references: [id])
+
+   @@map("project_files")
+}
+
+model Role {
+  id String   @id @default(uuid())
+  name String
+  description String
+  users       UserRole[]
+
+   @@map("roles")
+}
+
+model UserRole {
+  id String   @id @default(uuid())
+  user_id String
+  role_id String
+  assigned_at DateTime
+  user   User @relation(fields: [user_id], references: [id])
+  role   Role @relation(fields: [role_id], references: [id])
+
+   @@map("user_roles")
+}
