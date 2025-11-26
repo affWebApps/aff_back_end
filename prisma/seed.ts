@@ -1,6 +1,6 @@
 console.log("starting seed file")
 
-import { PrismaClient } from "./app/generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 
 const prisma = new PrismaClient();
