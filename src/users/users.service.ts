@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { User } from '@prisma/client';
+import type { AuthProvider, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -11,6 +11,8 @@ export class UsersService {
     passwordHash: string;
     firstName?: string;
     lastName?: string;
+    authProvider?: AuthProvider;
+    isVerified?: boolean;
   }): Promise<User> {
     return this.prisma.user.create({
       data: {
@@ -19,6 +21,8 @@ export class UsersService {
         first_name: input.firstName,
         last_name: input.lastName,
         role: 'designer',
+        auth_provider: input.authProvider ?? 'EMAIL',
+        is_verified: input.isVerified ?? false,
       },
     });
   }
