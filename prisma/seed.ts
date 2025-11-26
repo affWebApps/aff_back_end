@@ -2,9 +2,7 @@ console.log("starting seed file")
 
 import { PrismaClient } from "@prisma/client";
 import { faker } from "@faker-js/faker";
-
-const prisma = new PrismaClient();
-
+import { prisma } from '../src/lib/prisma';
 
 
 async function main() {

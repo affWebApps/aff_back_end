@@ -34,6 +34,21 @@ Backend for AFF. NodeJS, NestJS, PostgreSQL, Typescript
 ```bash
 $ npm install
 ```
+## Get the DB up and running on local
+```bash
+$ npx prisma migrate
+```
+
+seed the db
+```bash
+$ npx prisma db seed
+```
+
+if you want to drop the db to recreate or sth
+```bash
+$ npx prisma migrate reset
+```
+
 
 ## Compile and run the project
 
