@@ -39,6 +39,22 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
+  async findAllMinimal(): Promise<Partial<User>[]> {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        first_name: true,
+        last_name: true,
+        is_verified: true,
+        auth_provider: true,
+        created_at: true,
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
   async updateUser(
     id: string,
     data: {

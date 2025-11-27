@@ -12,6 +12,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { MailModule } from '../mail/mail.module';
 import { FacebookAuthGuard } from './guards/facebook-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { AdminGuard } from './guards/admin.guard';
 
 @Module({
   imports: [
