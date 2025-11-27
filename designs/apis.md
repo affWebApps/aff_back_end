@@ -1,34 +1,46 @@
 ## Auth & Account Security
 
-POST /v1/auth/register – email/password signup (optional invite code).
+POST /v1/auth/register – email/password signup (optional invite code). ✅
 
-POST /v1/auth/login
+POST /v1/auth/login ✅
 
-POST /v1/auth/logout
+POST /v1/auth/logout ✅
 
-POST /v1/auth/refresh – refresh token.
+POST /v1/auth/refresh – refresh token. (ON HOLD ✋ )
 
-POST /v1/auth/verify-email – consume token.
+POST /v1/auth/verify-email – consume token. ✅
 
-POST /v1/auth/forgot-password – send reset email.
+POST /auth/resend-verification – {email} → sends new verification email ✅
 
-POST /v1/auth/reset-password – {token,newPassword}.
+GET /auth/facebook – starts Facebook OAuth ✅ (facebook profile picture still not showing ‼️ )
 
-POST /v1/auth/change-password – (authed) current→new.
+GET /auth/facebook/callback – OAuth callback → {access_token} ✅
 
-(Optional 2FA) POST /v1/auth/otp/request, POST /v1/auth/otp/verify.
+GET /auth/google – starts Google OAuth ✅
+
+GET /auth/google/callback – OAuth callback → {access_token} ✅
+
+POST /v1/auth/forgot-password – send reset email. ✅
+
+POST /v1/auth/reset-password – {token,newPassword}. ✅
+
+POST /v1/auth/change-password – (authed) current→new ✅
+
+(Optional 2FA) POST /v1/auth/otp/request, POST /v1/auth/otp/verify. (ON HOLD ✋ )
 
 ## Users, Roles, Profile
 
-GET /v1/users/me
+GET /users – JWT required; list users (only for admin) ✅
 
-PATCH/PUT /v1/users/me – name, bio, locale, marketing opt-in.
+GET /v1/users/me ✅
+
+PATCH/PUT /v1/users/me – name, bio, locale, marketing opt-in. ✅
 
 PATCH /v1/users/me/roles – toggle designer|tailor|both.
 
 POST /v1/users/me/avatar – signed upload or multipart.
 
-GET /v1/users/:id – public profile.
+GET /v1/users/:id – public profile. ✅
 
 GET /v1/users/:id/portfolio – designs/products summary.
 
