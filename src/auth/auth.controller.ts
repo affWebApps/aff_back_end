@@ -10,10 +10,12 @@ import {
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterDto } from './dto/register.dto';
-import { AuthGuard } from '@nestjs/passport';
 import { Response, Request } from 'express';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { FacebookAuthGuard } from './guards/facebook-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -42,14 +44,28 @@ export class AuthController {
   }
 
   @Get('facebook')
-  @UseGuards(AuthGuard('facebook'))
+  @UseGuards(FacebookAuthGuard)
   async facebookLogin() {
     return;
   }
 
   @Get('facebook/callback')
-  @UseGuards(AuthGuard('facebook'))
+  @UseGuards(FacebookAuthGuard)
   async facebookCallback(@Req() req: any, @Res() res: Response) {
+    const tokens = await this.authService.login(req.user as { id: string; email: string });
+    // In a real app you might redirect with tokens or set cookies
+    return res.json(tokens);
+  }
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleLogin() {
+    return;
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(@Req() req: any, @Res() res: Response) {
     const tokens = await this.authService.login(req.user as { id: string; email: string });
     // In a real app you might redirect with tokens or set cookies
     return res.json(tokens);

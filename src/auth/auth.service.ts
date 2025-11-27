@@ -79,12 +79,13 @@ export class AuthService {
   }
 
   async handleOAuthLogin(
-    provider: 'facebook',
+    provider: 'facebook' | 'google',
     data: {
       email: string;
       firstName?: string;
       lastName?: string;
       providerId: string;
+      avatarUrl?: string
     },
   ) {
     const existingUser = await this.usersService.findByEmail(data.email);
@@ -102,8 +103,9 @@ export class AuthService {
       passwordHash: generatedPassword,
       firstName: data.firstName,
       lastName: data.lastName,
-      authProvider: 'FACEBOOK',
+      authProvider: provider === 'google' ? 'GOOGLE' : 'FACEBOOK',
       isVerified: true,
+      avatarUrl: data.avatarUrl
     });
   }
 

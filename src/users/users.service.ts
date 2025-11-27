@@ -13,6 +13,7 @@ export class UsersService {
     lastName?: string;
     authProvider?: AuthProvider;
     isVerified?: boolean;
+    avatarUrl?: string
   }): Promise<User> {
     return this.prisma.user.create({
       data: {
@@ -23,6 +24,7 @@ export class UsersService {
         role: 'designer',
         auth_provider: input.authProvider ?? 'EMAIL',
         is_verified: input.isVerified ?? false,
+        avatar_url: input.avatarUrl
       },
     });
   }

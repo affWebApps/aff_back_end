@@ -77,7 +77,7 @@ model VerificationToken {
   used_at    DateTime?
   created_at DateTime @default(now())
 
-  user       User     @relation(fields: [user_id], references: [id])
+  user       User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
 
   @@map("verification_tokens")
 }

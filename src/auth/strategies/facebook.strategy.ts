@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Profile, Strategy } from 'passport-facebook';
@@ -6,6 +6,8 @@ import { AuthService } from '../auth.service';
 
 @Injectable()
 export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
+  private readonly logger = new Logger(FacebookStrategy.name);
+
   constructor(
     configService: ConfigService,
     private readonly authService: AuthService,
@@ -31,14 +33,25 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
         ? profile.emails[0].value
         : `${profile.id}@facebook.local`;
 
-    const user =
-      (await this.authService.handleOAuthLogin('facebook', {
-        email,
-        firstName: profile.name?.givenName,
-        lastName: profile.name?.familyName,
-        providerId: profile.id,
-      })) ?? null;
+    const photo_url = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : ''
 
-    return user;
+    try {
+      const user =
+        (await this.authService.handleOAuthLogin('facebook', {
+          email,
+          firstName: profile.name?.givenName,
+          lastName: profile.name?.familyName,
+          providerId: profile.id,
+          avatarUrl: photo_url
+        })) ?? null;
+
+      return user;
+    } catch (error) {
+      this.logger.error('Facebook auth failed', error?.stack, {
+        providerId: profile.id,
+        email,
+      });
+      throw new UnauthorizedException('Facebook authentication failed');
+    }
   }
 }
