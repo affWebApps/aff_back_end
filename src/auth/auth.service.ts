@@ -14,6 +14,7 @@ import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { OAuthCodeDto } from './dto/oauth-code.dto';
 import { Logger } from '@nestjs/common';
 
 @Injectable()
@@ -127,6 +128,27 @@ export class AuthService {
       isVerified: true,
       avatarUrl: data.avatarUrl
     });
+  }
+
+  createOAuthCode(user: { id: string; email: string }, provider: string) {
+    return this.jwtService.sign(
+      { sub: user.id, email: user.email, provider },
+      { expiresIn: '5m' },
+    );
+  }
+
+  async exchangeOAuthCode(code: string) {
+    try {
+      const payload = this.jwtService.verify(code);
+      const user = await this.usersService.findById(payload.sub);
+      if (!user) {
+        throw new BadRequestException('Invalid code');
+      }
+      return this.login({ id: user.id, email: user.email });
+    } catch (error) {
+      this.logger.warn('OAuth code exchange failed', { message: error?.message });
+      throw new BadRequestException('Invalid or expired code');
+    }
   }
 
   private async createVerificationToken(userId: string) {
