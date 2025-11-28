@@ -88,11 +88,28 @@ export class AuthService {
       firstName?: string;
       lastName?: string;
       providerId: string;
-      avatarUrl?: string
+      avatarUrl?: string;
     },
   ) {
     const existingUser = await this.usersService.findByEmail(data.email);
     if (existingUser) {
+      const updates: Record<string, any> = {};
+      if (!existingUser.first_name && data.firstName) {
+        updates.first_name = data.firstName;
+      }
+      if (!existingUser.last_name && data.lastName) {
+        updates.last_name = data.lastName;
+      }
+      if ((!existingUser.avatar_url || existingUser.avatar_url === '') && data.avatarUrl) {
+        updates.avatar_url = data.avatarUrl;
+      }
+      if (Object.keys(updates).length > 0) {
+        return this.usersService.updateUser(existingUser.id, {
+          firstName: updates.first_name,
+          lastName: updates.last_name,
+          avatarUrl: updates.avatar_url,
+        });
+      }
       return existingUser;
     }
 
