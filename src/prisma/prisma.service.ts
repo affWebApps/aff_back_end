@@ -21,7 +21,7 @@ export class PrismaService
       const ping = await this.$queryRaw`SELECT 1`;
       this.logger.log('Connected to database')
     } catch (error) {
-      this.logger.error('Database connection failed', error?.stack)
+      this.logger.error('Database connection failed')
       throw error;
     }
 

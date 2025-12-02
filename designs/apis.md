@@ -26,6 +26,8 @@ POST /v1/auth/reset-password – {token,newPassword}. ✅
 
 POST /v1/auth/change-password – (authed) current→new ✅
 
+POST /v1/auth/oauth-exchange - route to login socially authed user ✅
+
 (Optional 2FA) POST /v1/auth/otp/request, POST /v1/auth/otp/verify. (ON HOLD ✋ )
 
 ## Users, Roles, Profile
@@ -36,7 +38,7 @@ GET /v1/users/me ✅
 
 PATCH/PUT /v1/users/me – name, bio, locale, marketing opt-in. ✅
 
-PATCH /v1/users/me/roles – toggle designer|tailor|both.
+PATCH /v1/users/me/roles – toggle designer|tailor|both. (ON HOLD ✋ )
 
 POST /v1/users/me/avatar – signed upload or multipart.
 
