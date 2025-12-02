@@ -52,7 +52,7 @@ PATCH /v1/portfolio – update user portfolio ✅
 
 DEL /v1/portfolio – delete user portfolio ✅
 
-GET /v1/reviews – aggregate + list.
+GET /v1/reviews – aggregate + list. ✅
 
 ## Notification Center & Preferences
 

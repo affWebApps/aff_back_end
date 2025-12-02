@@ -51,6 +51,11 @@ export class UsersService {
         created_at: true,
         updated_at: true,
         reviews_received: true,
+        portfolios: {
+          include: {
+            Image: true,
+          },
+        },
       },
     }) as unknown as User | null;
   }
@@ -66,6 +71,9 @@ export class UsersService {
         is_verified: true,
         auth_provider: true,
         created_at: true,
+        portfolios: {
+          include: { Image: true },
+        },
       },
       orderBy: { created_at: 'desc' },
     });
