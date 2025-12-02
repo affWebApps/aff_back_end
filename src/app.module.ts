@@ -8,6 +8,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { StorageModule } from './storage/storage.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { PortfoliosModule } from './portfolios/portfolios.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { UploadsModule } from './uploads/uploads.module';
     AuthModule,
     StorageModule,
     UploadsModule,
+    PortfoliosModule,
+    ReviewsModule,
     UsersModule,
   ],
   controllers: [AppController, HealthController],

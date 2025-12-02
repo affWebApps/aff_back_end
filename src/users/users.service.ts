@@ -36,7 +36,23 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { id } });
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        display_name: true,
+        avatar_url: true,
+        role: true,
+        is_active: true,
+        is_verified: true,
+        created_at: true,
+        updated_at: true,
+        reviews_received: true,
+      },
+    }) as unknown as User | null;
   }
 
   async findAllMinimal(): Promise<Partial<User>[]> {

@@ -50,6 +50,7 @@ model User {
   escrows_buyer            Escrow[]    @relation("BuyerEscrows")
   escrows_seller           Escrow[]    @relation("SellerEscrows")
   reviews_written          Review[]
+  reviews_received         Review[]    @relation("ReviewsReceived")
   admin_actions            AdminAction[]
   support_tickets          SupportTicket[]
   project_files            ProjectFile[]
@@ -258,15 +259,28 @@ model Chat {
 model Portfolio {
   id          String   @id @default(uuid())
   user_id     String
-  image_url   String?
   description String?
   title       String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
   user        User     @relation(fields: [user_id], references: [id])
+  Image       PortfolioImage[]
 
   @@map("portfolios")
+}
+
+model PortfolioImage {
+  id          String   @id @default(uuid())
+  portfolio_id  String
+  image_url   String
+  is_primary  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  images   Portfolio  @relation(fields: [portfolio_id], references: [id])
+
+  @@map("portfolio_images")
 }
 
 model Notification {
@@ -335,6 +349,7 @@ model Review {
   rating         Int
   comment        String?
   reviewer       User     @relation(fields: [reviewer_id], references: [id])
+  target         User?    @relation("ReviewsReceived", fields: [target_id], references: [id])
 
   @@map("reviews")
 }

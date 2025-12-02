@@ -44,9 +44,15 @@ POST /v1/users/me/avatar – signed upload or multipart.
 
 GET /v1/users/:id – public profile. ✅
 
-GET /v1/users/:id/portfolio – designs/products summary.
+GET /v1/portfolio – get user portfolio ✅
 
-GET /v1/users/:id/reviews – aggregate + list.
+POST /v1/portfolio – create user portfolio ✅
+
+PATCH /v1/portfolio – update user portfolio ✅
+
+DEL /v1/portfolio – delete user portfolio ✅
+
+GET /v1/reviews – aggregate + list.
 
 ## Notification Center & Preferences
 
