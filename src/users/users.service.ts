@@ -48,14 +48,16 @@ export class UsersService {
         role: true,
         is_active: true,
         is_verified: true,
-        created_at: true,
-        updated_at: true,
         reviews_received: true,
         portfolios: {
           include: {
             Image: true,
           },
         },
+        projects: true,
+        bids: true,
+        created_at: true,
+        updated_at: true,
       },
     }) as unknown as User | null;
   }

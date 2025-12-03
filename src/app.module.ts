@@ -10,6 +10,7 @@ import { StorageModule } from './storage/storage.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { PortfoliosModule } from './portfolios/portfolios.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     UploadsModule,
     PortfoliosModule,
     ReviewsModule,
+    ProjectsModule,
     UsersModule,
   ],
   controllers: [AppController, HealthController],

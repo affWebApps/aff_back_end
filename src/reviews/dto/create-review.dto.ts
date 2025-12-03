@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class CreateReviewDto {
-  @ApiProperty({ example: 'user', description: 'Target type: user or project' })
+  @ApiProperty({ example: 'user', description: 'Target type: user | project | product' })
   @IsString()
   targetType: string;
 

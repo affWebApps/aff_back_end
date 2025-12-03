@@ -50,7 +50,7 @@ model User {
   escrows_buyer            Escrow[]    @relation("BuyerEscrows")
   escrows_seller           Escrow[]    @relation("SellerEscrows")
   reviews_written          Review[]
-  reviews_received         Review[]    @relation("ReviewsReceived")
+  reviews_received         Review[]    @relation("UserReviewTarget")
   admin_actions            AdminAction[]
   support_tickets          SupportTicket[]
   project_files            ProjectFile[]
@@ -136,6 +136,7 @@ model Project {
   orders           Order[]
   files            ProjectFile[]
   messages         Message[]
+  reviews          Review[] @relation("ProjectReviewTarget")
 
   @@map("projects")
 }
@@ -324,6 +325,7 @@ model Product {
 
   user               User     @relation(fields: [user_id], references: [id])
   images             ProductImage[]
+  reviews            Review[] @relation("ProductReviewTarget")
 
   @@map("products")
 }
@@ -342,14 +344,19 @@ model ProductImage {
 }
 
 model Review {
-  id             String   @id @default(uuid())
-  reviewer_id    String
-  target_id      String
-  target_type    String
-  rating         Int
-  comment        String?
-  reviewer       User     @relation(fields: [reviewer_id], references: [id])
-  target         User?    @relation("ReviewsReceived", fields: [target_id], references: [id])
+  id                String   @id @default(uuid())
+  reviewer_id       String
+  target_user_id    String?
+  target_project_id String?
+  target_product_id String?
+  target_type       String?
+  rating            Int
+  comment           String?
+
+  reviewer      User     @relation(fields: [reviewer_id], references: [id])
+  targetUser    User?    @relation("UserReviewTarget", fields: [target_user_id], references: [id], onDelete: SetNull)
+  targetProject Project? @relation("ProjectReviewTarget", fields: [target_project_id], references: [id], onDelete: SetNull)
+  targetProduct Product? @relation("ProductReviewTarget", fields: [target_product_id], references: [id], onDelete: SetNull)
 
   @@map("reviews")
 }
