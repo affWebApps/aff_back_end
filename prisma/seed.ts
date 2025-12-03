@@ -3,22 +3,23 @@ console.log("starting seed file")
 import { PrismaClient } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 import { prisma } from '../src/lib/prisma';
-
+import * as bcrypt from 'bcryptjs';
 
 async function main() {
     console.log("🌱 Seeding AFF Database...");
 
     // 1️⃣ Create 10 users
     const users = [];
+    const passwordHash = await bcrypt.hash('password', 10);
     for (let i = 0; i < 10; i++) {
         const user = await prisma.user.create({
             data: {
                 first_name: faker.person.firstName(),
                 last_name: faker.person.lastName(),
-                email: faker.internet.email(),
-                password_hash: faker.internet.password(),
+                email: faker.internet.email().toLowerCase(),
+                password_hash: passwordHash,
                 phone_number: faker.phone.number(),
-                role: faker.helpers.arrayElement(["DESIGNER", "TAILOR"]),
+                role: faker.helpers.arrayElement(["DESIGNER", "TAILOR", "BOTH"]),
                 bio: faker.person.bio(),
                 avatar_url: faker.image.avatar(),
                 rating: faker.number.float({ min: 3, max: 5 }),
@@ -57,7 +58,8 @@ async function main() {
                 title: `${faker.commerce.productAdjective()} ${design.garment_type}`,
                 description: faker.commerce.productDescription(),
                 budget: faker.number.float({ min: 50, max: 500 }),
-                status: faker.helpers.arrayElement(["OPEN", "IN_PROGRESS", "COMPLETED"]),
+                estimated_time: faker.helpers.arrayElement(['2 weeks', '1 month', '3 months']),
+                status: faker.helpers.arrayElement(["OPEN", "IN_PROGRESS", "COMPLETED", "CLOSED"]),
                 deadline: faker.date.future(),
             },
         });

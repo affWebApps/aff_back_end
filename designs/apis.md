@@ -110,19 +110,17 @@ GET /v1/assets/textures?mine=|public=
 
 ## Projects (service requests from Designers)
 
-POST /v1/projects – title, description, designId(s), budget, deadline, requirements.
+POST /v1/projects – CREATE A PROJECT - title, description, designId(s), budget, deadline, requirements. ✅
 
-GET /v1/projects?status=open|in_progress|…&q=&cursor=
+GET /v1/projects/:id - GET A PROJECT BY ID ✅
 
-GET /v1/projects/:id
+PATCH /v1/projects/:id – edits by owner. ✅
 
-PATCH /v1/projects/:id – edits by owner.
-
-POST /v1/projects/:id/close – stop accepting bids.
+POST /v1/projects/:id/close – stop accepting bids. ✅
 
 Requirements approval (before escrow):
 
-POST /v1/projects/:id/requirements – upload/define requirements (designer).
+POST /v1/projects/:id/requirements – upload/define requirements (designer). ✅
 
 POST /v1/projects/:id/requirements/approve – tailor/designer mutual approval.
 

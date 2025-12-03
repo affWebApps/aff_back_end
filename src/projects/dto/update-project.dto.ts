@@ -20,7 +20,12 @@ export class UpdateProjectDto {
   @IsNumber()
   budget?: number;
 
-  @ApiProperty({ example: 'in_progress', enum: STATUS_OPTIONS, required: false })
+  @ApiProperty({ example: '2 weeks', required: false, description: 'Human-readable estimate for delivery' })
+  @IsOptional()
+  @IsString()
+  estimatedTime?: string;
+
+  @ApiProperty({ example: 'IN_PROGRESS', enum: STATUS_OPTIONS, required: false })
   @IsOptional()
   @IsIn(STATUS_OPTIONS as unknown as string[])
   status?: string;

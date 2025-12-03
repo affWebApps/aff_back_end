@@ -3,7 +3,7 @@ import { IsOptional, IsString, IsNumber, IsIn, ValidateNested, IsArray } from 'c
 import { Type } from 'class-transformer';
 import { ProjectFileDto } from './project-file.dto';
 
-const STATUS_OPTIONS = ['still_hiring', 'in_progress', 'finished', 'closed'] as const;
+const STATUS_OPTIONS = ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'] as const;
 
 export class CreateProjectDto {
   @ApiProperty({ example: 'New summer dress', required: true })
@@ -20,7 +20,12 @@ export class CreateProjectDto {
   @IsNumber()
   budget?: number;
 
-  @ApiProperty({ example: 'still_hiring', enum: STATUS_OPTIONS, required: false })
+  @ApiProperty({ example: '3 months', required: false, description: 'Human-readable estimate for delivery' })
+  @IsOptional()
+  @IsString()
+  estimatedTime?: string;
+
+  @ApiProperty({ example: 'OPEN', enum: STATUS_OPTIONS, required: false })
   @IsOptional()
   @IsIn(STATUS_OPTIONS as unknown as string[])
   status?: string;

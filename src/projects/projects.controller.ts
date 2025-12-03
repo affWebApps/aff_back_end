@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { ProjectStatus } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -13,7 +14,7 @@ import { UpdateProjectRequirementDto } from './dto/update-project-requirement.dt
 @UseGuards(JwtAuthGuard)
 @Controller({ path: 'projects', version: '1' })
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(private readonly projectsService: ProjectsService) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a project (one owner)' })
@@ -47,11 +48,11 @@ export class ProjectsController {
   }
 
   @Post(':id/close')
-  @ApiOperation({ summary: 'Close project (set status to finished or closed)' })
+  @ApiOperation({ summary: 'Close project (set status to COMPLETED or CLOSED)' })
   async close(
     @Param('id') id: string,
     @Req() req: Request,
-    @Body('status') status: 'finished' | 'closed',
+    @Body('status') status: ProjectStatus,
   ) {
     const user = req.user as { id: string };
     return this.projectsService.close(id, user.id, status);
@@ -86,7 +87,7 @@ export class ProjectsController {
   }
 
   @Patch(':id/requirements/:reqId')
-  @ApiOperation({ summary: 'Update a requirement (owner only, only while still hiring)' })
+  @ApiOperation({ summary: 'Update a requirement (owner only, only while OPEN)' })
   async updateRequirement(
     @Param('id') projectId: string,
     @Param('reqId') reqId: string,
@@ -106,5 +107,16 @@ export class ProjectsController {
   ) {
     const user = req.user as { id: string };
     return this.projectsService.deleteRequirement(projectId, reqId, user.id);
+  }
+
+  @Post(':id/requirements/:reqId/approve')
+  @ApiOperation({ summary: 'Approve a requirement (designer approves designer_approved, others mark tailor_approved)' })
+  async approveRequirement(
+    @Param('id') projectId: string,
+    @Param('reqId') reqId: string,
+    @Req() req: Request,
+  ) {
+    const user = req.user as { id: string };
+    return this.projectsService.approveRequirement(projectId, reqId, user.id);
   }
 }

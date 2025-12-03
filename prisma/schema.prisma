@@ -124,7 +124,8 @@ model Project {
   title            String
   description      String?
   budget           Decimal? @db.Decimal(10,2)
-  status           String?
+  status           ProjectStatus @default(OPEN)
+  estimated_time   String?
   deadline         DateTime?
   created_at       DateTime @default(now())
   updated_at       DateTime @updatedAt
@@ -139,6 +140,13 @@ model Project {
   reviews          Review[] @relation("ProjectReviewTarget")
 
   @@map("projects")
+}
+
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
 }
 
 model ProjectRequirement {
@@ -162,7 +170,7 @@ model Bid {
   amount       Decimal? @db.Decimal(10,2)
   duration     String?
   message      String?
-  status       String?
+  status       BidStatus @default(PENDING)
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
@@ -170,6 +178,12 @@ model Bid {
   tailor       User     @relation(fields: [tailor_id], references: [id])
 
   @@map("bids")
+}
+
+enum BidStatus {
+  APPROVED
+  PENDING
+  REJECTED
 }
 
 model Order {

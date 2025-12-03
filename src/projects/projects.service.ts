@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ProjectStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto, STATUS_OPTIONS } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -15,7 +16,8 @@ export class ProjectsService {
         title: dto.title,
         description: dto.description,
         budget: dto.budget ? dto.budget : undefined,
-        status: dto.status ?? 'still_hiring',
+        estimated_time: dto.estimatedTime,
+        status: (dto.status as ProjectStatus) ?? ProjectStatus.OPEN,
         designer: { connect: { id: designerId } },
         design: dto.designId ? { connect: { id: dto.designId } } : undefined,
         files: dto.files && dto.files.length
@@ -68,7 +70,8 @@ export class ProjectsService {
         title: dto.title ?? project.title,
         description: dto.description ?? project.description,
         budget: dto.budget ?? project.budget,
-        status: dto.status ?? project.status,
+        estimated_time: dto.estimatedTime ?? project.estimated_time,
+        status: (dto.status as ProjectStatus) ?? project.status,
         files:
           dto.files && dto.files.length
             ? {
@@ -112,11 +115,14 @@ export class ProjectsService {
     return { status: 'deleted' };
   }
 
-  async close(id: string, designerId: string, status: 'finished' | 'closed') {
+  async close(id: string, designerId: string, status: ProjectStatus) {
     const project = await this.prisma.project.findUnique({ where: { id } });
     if (!project) throw new NotFoundException('Project not found');
     if (project.designer_id !== designerId) {
       throw new UnauthorizedException('Only the owner can close this project');
+    }
+    if (status !== ProjectStatus.COMPLETED && status !== ProjectStatus.CLOSED) {
+      throw new NotFoundException('Invalid status');
     }
     return this.prisma.project.update({
       where: { id },
@@ -137,8 +143,8 @@ export class ProjectsService {
     if (project.designer_id !== userId) {
       throw new UnauthorizedException('Only the owner can create requirements');
     }
-    if (project.status !== 'still_hiring') {
-      throw new UnauthorizedException('Project requirements can only be added while still hiring');
+    if (project.status !== ProjectStatus.OPEN) {
+      throw new UnauthorizedException('Project requirements can only be added while status is OPEN');
     }
     return this.prisma.projectRequirement.create({
       data: {
@@ -161,8 +167,8 @@ export class ProjectsService {
     if (project.designer_id !== userId) {
       throw new UnauthorizedException('Only the owner can update requirements');
     }
-    if (project.status !== 'still_hiring') {
-      throw new UnauthorizedException('Project requirements can only be updated while still hiring');
+    if (project.status !== ProjectStatus.OPEN) {
+      throw new UnauthorizedException('Project requirements can only be updated while status is OPEN');
     }
     const requirement = await this.prisma.projectRequirement.findUnique({ where: { id: requirementId } });
     if (!requirement || requirement.project_id !== projectId) {
@@ -190,5 +196,36 @@ export class ProjectsService {
     }
     await this.prisma.projectRequirement.delete({ where: { id: requirementId } });
     return { status: 'deleted' };
+  }
+
+  async approveRequirement(projectId: string, requirementId: string, userId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) throw new NotFoundException('Project not found');
+
+    const requirement = await this.prisma.projectRequirement.findUnique({ where: { id: requirementId } });
+    if (!requirement || requirement.project_id !== projectId) {
+      throw new NotFoundException('Requirement not found');
+    }
+
+    // Determine assigned tailor via accepted bid
+    const acceptedBid = await this.prisma.bid.findFirst({
+      where: { project_id: projectId, status: 'APPROVED' },
+    });
+
+    const isDesigner = project.designer_id === userId;
+    const isTailor = acceptedBid?.tailor_id === userId;
+
+    if (!isDesigner && !isTailor) {
+      throw new UnauthorizedException('Only the designer or assigned tailor can approve');
+    }
+
+    const updateData = isDesigner
+      ? { designer_approved: true }
+      : { tailor_approved: true };
+
+    return this.prisma.projectRequirement.update({
+      where: { id: requirementId },
+      data: updateData,
+    });
   }
 }
