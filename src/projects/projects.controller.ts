@@ -8,6 +8,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectsService } from './projects.service';
 import { CreateProjectRequirementDto } from './dto/create-project-requirement.dto';
 import { UpdateProjectRequirementDto } from './dto/update-project-requirement.dto';
+import { CreateBidDto } from './dto/create-bid.dto';
 
 @ApiTags('Projects')
 @ApiBearerAuth()
@@ -84,6 +85,24 @@ export class ProjectsController {
   ) {
     const user = req.user as { id: string };
     return this.projectsService.createRequirement(projectId, user.id, dto);
+  }
+
+  @Post(':id/bids')
+  @ApiOperation({ summary: 'Create a bid for a project (tailor)' })
+  async createBid(
+    @Param('id') projectId: string,
+    @Req() req: Request,
+    @Body() dto: CreateBidDto,
+  ) {
+    const user = req.user as { id: string };
+    return this.projectsService.createBid(projectId, user.id, dto);
+  }
+
+  @Get(':id/bids')
+  @ApiOperation({ summary: 'List bids for a project' })
+  async listBids(@Param('id') projectId: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.projectsService.listBids(projectId, user.id);
   }
 
   @Patch(':id/requirements/:reqId')

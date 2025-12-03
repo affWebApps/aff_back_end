@@ -122,19 +122,19 @@ Requirements approval (before escrow):
 
 POST /v1/projects/:id/requirements – upload/define requirements (designer). ✅
 
-POST /v1/projects/:id/requirements/approve – tailor/designer mutual approval.
+POST /v1/projects/:id/requirements/approve – tailor/designer mutual approval. ✅
 
 ## Bids (Tailors → Projects)
 
-POST /v1/projects/:id/bids – {amount, duration, message}
+POST /v1/projects/:id/bids – CREATE BID ✅
 
-GET /v1/projects/:id/bids
+GET /v1/projects/:id/bids - View all BIDS on a project ✅
 
-GET /v1/bids?mine=true&status=
+GET /v1/bids/:bidId/ – View a single bid by ID ✅
 
-POST /v1/bids/:bidId/accept – designer only (auto creates order).
+PATCH /v1/bids/:bidId/accept – designer only (accept a bid). ✅
 
-POST /v1/bids/:bidId/reject
+PATCH /v1/bids/:bidId/reject - designer only, reject a bid ✅
 
 ## Orders (created once a bid is accepted)
 
@@ -212,9 +212,9 @@ GET /v1/admin/audit-logs
 
 ## Files / Uploads
 
-POST /v1/uploads/sign – S3/R2 signed URL (design exports, deliverables).
+POST /v1/uploads/sign – S3/R2 signed URL (design exports, deliverables). ✅
 
-POST /v1/uploads/complete – finalize & persist metadata.
+POST /v1/uploads/complete – finalize & persist metadata. ✅
 
 ## Search (optional unified)
 

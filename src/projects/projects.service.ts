@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { ProjectStatus } from '@prisma/client';
+import { BidStatus, ProjectStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto, STATUS_OPTIONS } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreateProjectRequirementDto } from './dto/create-project-requirement.dto';
 import { UpdateProjectRequirementDto } from './dto/update-project-requirement.dto';
+import { CreateBidDto } from './dto/create-bid.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -135,6 +136,109 @@ export class ProjectsService {
     return this.prisma.projectRequirement.findMany({
       where: { project_id: projectId },
     });
+  }
+
+  async createBid(projectId: string, tailorId: string, dto: CreateBidDto) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) throw new NotFoundException('Project not found');
+
+    const existingBid = await this.prisma.bid.findFirst({
+      where: { project_id: projectId, tailor_id: tailorId },
+    });
+    if (existingBid) {
+      throw new UnauthorizedException('You have already submitted a bid for this project');
+    }
+
+    return this.prisma.bid.create({
+      data: {
+        project_id: projectId,
+        tailor_id: tailorId,
+        amount: dto.amount,
+        duration: dto.duration,
+        message: dto.message,
+        status: BidStatus.PENDING,
+      },
+    });
+  }
+
+  async listBids(projectId: string, userId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) throw new NotFoundException('Project not found');
+    if (project.designer_id !== userId) {
+      throw new UnauthorizedException('Only the project owner can view bids');
+    }
+
+    return this.prisma.bid.findMany({
+      where: { project_id: projectId },
+      include: {
+        project: { select: { id: true, title: true, designer_id: true } },
+      },
+    });
+  }
+
+  async acceptBid(bidId: string, userId: string) {
+    const bid = await this.prisma.bid.findUnique({
+      where: { id: bidId },
+      include: { project: true },
+    });
+    if (!bid) throw new NotFoundException('Bid not found');
+    if (bid.project.designer_id !== userId) {
+      throw new UnauthorizedException('Only the project designer can accept bids');
+    }
+    return this.prisma.bid.update({
+      where: { id: bidId },
+      data: { status: BidStatus.APPROVED },
+    });
+  }
+
+  async decideBid(bidId: string, userId: string, decision: BidStatus) {
+    const bid = await this.prisma.bid.findUnique({
+      where: { id: bidId },
+      include: { project: true },
+    });
+    if (!bid) throw new NotFoundException('Bid not found');
+    if (bid.project.designer_id !== userId) {
+      throw new UnauthorizedException('Only the project designer can decide on bids');
+    }
+    if (bid.status === BidStatus.APPROVED || bid.status === BidStatus.REJECTED) {
+      throw new UnauthorizedException('Bid decision is already final');
+    }
+    if (decision !== BidStatus.APPROVED && decision !== BidStatus.REJECTED) {
+      throw new UnauthorizedException('Invalid decision');
+    }
+    return this.prisma.bid.update({
+      where: { id: bidId },
+      data: { status: decision },
+    });
+  }
+
+  async deleteBid(bidId: string, userId: string) {
+    const bid = await this.prisma.bid.findUnique({ where: { id: bidId } });
+    if (!bid) throw new NotFoundException('Bid not found');
+    if (bid.tailor_id !== userId) {
+      throw new UnauthorizedException('You can only delete your own bid');
+    }
+    await this.prisma.bid.delete({ where: { id: bidId } });
+    return { status: 'deleted' };
+  }
+
+  async getBidById(bidId: string, userId: string) {
+    const bid = await this.prisma.bid.findUnique({
+      where: { id: bidId },
+      include: {
+        project: { select: { id: true, title: true, designer_id: true } },
+      },
+    });
+    if (!bid) throw new NotFoundException('Bid not found');
+
+    const isOwner = bid.tailor_id === userId;
+    const isProjectDesigner = bid.project.designer_id === userId;
+
+    if (!isOwner && !isProjectDesigner) {
+      throw new UnauthorizedException('You are not allowed to view this bid');
+    }
+
+    return bid;
   }
 
   async createRequirement(projectId: string, userId: string, dto: CreateProjectRequirementDto) {
