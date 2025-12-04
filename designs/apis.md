@@ -186,7 +186,9 @@ POST /v1/checkout/webhook – payment confirmation (non-escrow if shipped items)
 
 POST /v1/orders/:orderId/reviews – one per counterpart.
 
-GET /v1/users/:id/reviews – public.
+Review Project ✅
+
+GET /v1/users/:id/reviews – public.✅
 
 ## Newsletter & System Updates
 
@@ -198,7 +200,7 @@ POST /v1/system/announcements – admin create (in-app banner + optional email).
 
 ## Admin & Moderation
 
-GET /v1/admin/users?role=&q=
+GET /v1/admin/users?role=&q= ✅
 
 GET /v1/admin/projects?status=
 
