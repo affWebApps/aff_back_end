@@ -1,4 +1,4 @@
-import { VersioningType, ValidationPipe } from '@nestjs/common';
+import { Logger, VersioningType, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -29,6 +29,19 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('v1/docs', app, document);
 
-  await app.listen(process.env.PORT ?? 8080);
+  const port = Number(process.env.PORT ?? 8080);
+  await app.listen(port);
+
+  // Heartbeat ping to keep the app warm (default: /v1/health) every ~13 minutes
+  const pingUrl = process.env.PING_URL ?? `https://aff-back-end.onrender.com/v1`;
+  const pingIntervalMs = Number(process.env.PING_INTERVAL_MS ?? 780_000); // 13 minutes
+  setInterval(async () => {
+    try {
+      await fetch(pingUrl);
+      Logger.log(`Pinged ${pingUrl}`, 'Heartbeat');
+    } catch (err) {
+      Logger.warn(`Heartbeat failed for ${pingUrl}: ${err}`, 'Heartbeat');
+    }
+  }, pingIntervalMs);
 }
 bootstrap();
