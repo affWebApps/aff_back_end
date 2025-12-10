@@ -46,6 +46,7 @@ export class MailService {
         subject: options.subject,
         html,
       });
+      console.log(sent)
     } catch (error) {
       console.log(error)
     }
