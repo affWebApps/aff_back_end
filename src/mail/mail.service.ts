@@ -20,7 +20,7 @@ export class MailService {
       service: 'gmail',
       host: this.config.get<string>('SMTP_HOST'),
       port: Number(this.config.get<string>('SMTP_PORT') ?? 587),
-      secure: false,
+      secure: true,
       auth: {
         user: this.config.get<string>('SMTP_USER'),
         pass: this.config.get<string>('SMTP_PASS'),
@@ -37,6 +37,8 @@ export class MailService {
     const templatePath = path.join(this.templatesDir, `${options.template}.hbs`);
     const source = fs.readFileSync(templatePath, 'utf8');
     const html = handlebars.compile(source)(options.context);
+
+    console.log(this.config.get<string>('SMTP_HOST'), this.config.get<string>('SMTP_USER'), this.config.get<string>('SMTP_PASS'),)
 
     await this.transporter.sendMail({
       from: this.config.get<string>('EMAIL_FROM') ?? 'no-reply@aff.com',
