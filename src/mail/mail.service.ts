@@ -39,12 +39,16 @@ export class MailService {
     const html = handlebars.compile(source)(options.context);
 
     console.log(this.config.get<string>('SMTP_HOST'), this.config.get<string>('SMTP_USER'), this.config.get<string>('SMTP_PASS'),)
+    try {
+      const sent = await this.transporter.sendMail({
+        from: this.config.get<string>('EMAIL_FROM') ?? 'no-reply@aff.com',
+        to: options.to,
+        subject: options.subject,
+        html,
+      });
+    } catch (error) {
+      console.log(error)
+    }
 
-    await this.transporter.sendMail({
-      from: this.config.get<string>('EMAIL_FROM') ?? 'no-reply@aff.com',
-      to: options.to,
-      subject: options.subject,
-      html,
-    });
   }
 }
