@@ -9,7 +9,7 @@ async function bootstrap() {
     origin: ['http://localhost:3000', 'https://aff-front-end.vercel.app'], // add other FE origins as needed
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: '*',
   });
   app.enableVersioning({ type: VersioningType.URI });
   app.useGlobalPipes(
