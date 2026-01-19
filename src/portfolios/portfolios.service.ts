@@ -7,19 +7,24 @@ import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 export class PortfoliosService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async findByUser(userId: string) {
-    return this.prisma.portfolio.findFirst({
+  async listByUser(userId: string) {
+    return this.prisma.portfolio.findMany({
       where: { user_id: userId },
       include: { Image: true },
+      orderBy: { created_at: 'desc' },
     });
   }
 
-  async upsertForUser(userId: string, dto: CreatePortfolioDto) {
-    const existing = await this.findByUser(userId);
-    if (existing) {
-      return this.updateForUser(userId, dto);
-    }
+  async getByIdForUser(userId: string, portfolioId: string) {
+    const portfolio = await this.prisma.portfolio.findFirst({
+      where: { id: portfolioId, user_id: userId },
+      include: { Image: true },
+    });
+    if (!portfolio) throw new NotFoundException('Portfolio not found');
+    return portfolio;
+  }
 
+  async createForUser(userId: string, dto: CreatePortfolioDto) {
     const images = this.normalizeImages(dto.images);
 
     return this.prisma.portfolio.create({
@@ -42,8 +47,8 @@ export class PortfoliosService {
     });
   }
 
-  async updateForUser(userId: string, dto: UpdatePortfolioDto | CreatePortfolioDto) {
-    const existing = await this.findByUser(userId);
+  async updateForUser(userId: string, portfolioId: string, dto: UpdatePortfolioDto | CreatePortfolioDto) {
+    const existing = await this.prisma.portfolio.findFirst({ where: { id: portfolioId, user_id: userId } });
     if (!existing) {
       throw new NotFoundException('Portfolio not found');
     }
@@ -84,8 +89,8 @@ export class PortfoliosService {
     return images;
   }
 
-  async deleteForUser(userId: string) {
-    const existing = await this.findByUser(userId);
+  async deleteForUser(userId: string, portfolioId: string) {
+    const existing = await this.prisma.portfolio.findFirst({ where: { id: portfolioId, user_id: userId } });
     if (!existing) {
       throw new NotFoundException('Portfolio not found');
     }
