@@ -34,6 +34,8 @@ model User {
   is_verified              Boolean     @default(false)
   created_at               DateTime    @default(now())
   updated_at               DateTime    @updatedAt
+  vendure_customer_id      String?
+  vendure_vendor_id        String?
   
   designs                  Design[]
   projects                 Project[]   @relation("DesignerProjects")

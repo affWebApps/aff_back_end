@@ -11,6 +11,10 @@ import { UploadsModule } from './uploads/uploads.module';
 import { PortfoliosModule } from './portfolios/portfolios.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ProjectsModule } from './projects/projects.module';
+import { BlogsModule } from './blogs/blogs.module';
+import { AdminModule } from './admin/admin.module';
+import { VendureModule } from './vendure/vendure.module';
+import { MarketplaceModule } from './marketplace/marketplace.module';
 
 @Module({
   imports: [
@@ -22,6 +26,10 @@ import { ProjectsModule } from './projects/projects.module';
     PortfoliosModule,
     ReviewsModule,
     ProjectsModule,
+    AdminModule,
+    BlogsModule,
+    MarketplaceModule,
+    VendureModule,
     UsersModule,
   ],
   controllers: [AppController, HealthController],
