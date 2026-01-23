@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { GraphQLClient } from 'graphql-request';
 import { ConfigService } from '@nestjs/config';
-import { SearchProductsQuery } from './vendure/queries';
+import { GetCollectionProductsQuery, GetProductDetailQuery } from './vendure/queries';
 
 @Injectable()
 export class MarketplaceService {
@@ -18,13 +18,21 @@ export class MarketplaceService {
     });
   }
 
-  async listProducts(skip = 0, take = 20, term = '') {
-    return this.client.request(SearchProductsQuery, {
+  async listProducts(skip = 0, take = 20) {
+    const result = await this.client.request(GetCollectionProductsQuery, {
+      slug: 'electronics', // TODO: make collection slug dynamic
       input: {
-        term,
+        collectionSlug: 'electronics',
         take,
         skip,
+        groupByProduct: true,
       },
     });
+    return result.search;
+  }
+
+  async getProductDetail(slug: string) {
+    const result = await this.client.request(GetProductDetailQuery, { slug });
+    return result.product;
   }
 }

@@ -1,4 +1,5 @@
 import { gql } from 'graphql-request';
+import { ActiveCustomerFragment, ProductCardFragment } from './fragments';
 
 export const GetTopCollectionsQuery = gql`
     query GetTopCollections {
@@ -24,6 +25,9 @@ export const SearchProductsQuery = gql`
     query SearchProducts($input: SearchInput!) {
         search(input: $input) {
             totalItems
+            items {
+                ...ProductCard
+            }
             facetValues {
                 count
                 facetValue {
@@ -413,6 +417,27 @@ export const GetActiveChannelQuery = gql`
 `;
 
 export const GetCollectionProductsQuery = gql`
+    fragment ProductCard on SearchResult {
+        productId
+        productName
+        slug
+        productAsset {
+            id
+            preview
+        }
+        priceWithTax {
+            __typename
+            ... on PriceRange {
+                min
+                max
+            }
+            ... on SinglePrice {
+                value
+            }
+        }
+        currencyCode
+    }
+        
     query GetCollectionProducts($slug: String!, $input: SearchInput!) {
         collection(slug: $slug) {
             id
