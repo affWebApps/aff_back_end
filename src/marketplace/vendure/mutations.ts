@@ -112,6 +112,33 @@ export const RemovePromotionCodeMutation = gql`
     }
 `;
 
+export const CreateProductMutation = gql`
+  mutation CreateProduct($input: CreateProductInput!) {
+    createProduct(input: $input) {
+      id
+      name
+      slug
+      customFields {
+        vendorId
+      }
+    }
+  }
+`;
+
+export const CreateProductVariantsMutation = gql`
+  mutation CreateProductVariants($input: [CreateProductVariantInput!]!) {
+    createProductVariants(input: $input) {
+      id
+      sku
+      price
+      stockOnHand
+      customFields {
+        vendorId
+      }
+    }
+  }
+`;
+
 export const CreateCustomerAddressMutation = gql`
     mutation CreateCustomerAddress($input: CreateAddressInput!) {
         createCustomerAddress(input: $input) {

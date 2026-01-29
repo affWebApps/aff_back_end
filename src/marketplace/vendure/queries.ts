@@ -22,6 +22,26 @@ export const GetActiveCustomerQuery = gql`
 `;
 
 export const SearchProductsQuery = gql`
+    fragment ProductCard on SearchResult {
+        productId
+        productName
+        slug
+        productAsset {
+            id
+            preview
+        }
+        priceWithTax {
+            __typename
+            ... on PriceRange {
+                min
+                max
+            }
+            ... on SinglePrice {
+                value
+            }
+        }
+        currencyCode
+    }
     query SearchProducts($input: SearchInput!) {
         search(input: $input) {
             totalItems
@@ -46,6 +66,58 @@ export const SearchProductsQuery = gql`
 export const GetProductDetailQuery = gql`
     query GetProductDetail($slug: String!) {
         product(slug: $slug) {
+            id
+            name
+            description
+            slug
+            assets {
+                id
+                preview
+                source
+            }
+            variants {
+                id
+                name
+                sku
+                priceWithTax
+                stockLevel
+                options {
+                    id
+                    code
+                    name
+                    groupId
+                    group {
+                        id
+                        code
+                        name
+                    }
+                }
+            }
+            optionGroups {
+                id
+                code
+                name
+                options {
+                    id
+                    code
+                    name
+                }
+            }
+            collections {
+                id
+                name
+                slug
+                parent {
+                    id
+                }
+            }
+        }
+    }
+`;
+
+export const GetProductDetailByIdQuery = gql`
+    query GetProductDetailById($id: ID!) {
+        product(id: $id) {
             id
             name
             description
