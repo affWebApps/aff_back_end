@@ -40,6 +40,13 @@ export class AuthController {
     return this.authService.login(user);
   }
 
+  @UseGuards(LocalAuthGuard)
+  @Post('logout')
+  @ApiOperation({ summary: 'Logout' })
+  async logout(@Req() req: Request) {
+    return this.authService.logout();
+  }
+
   @Post('register')
   @ApiOperation({ summary: 'Register a new account (sends verification email)' })
   async register(@Body() dto: RegisterDto) {

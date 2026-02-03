@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MarketplaceService } from './marketplace.service';
 import { buildSearchInput } from './search-helpers';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Marketplace')
 @Controller({ path: 'marketplace', version: '1' })
@@ -70,5 +72,28 @@ export class MarketplaceController {
     @Body('variant') variantInput: any,
   ) {
     return this.marketplaceService.createProductWithVariant({ productInput, variantInput });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('customers')
+  @ApiOperation({ summary: 'Ensure Vendure customer exists for current user' })
+  async ensureCustomer(
+    @Req() req: any,
+
+  ) {
+    const user = req.user as {
+      id: string;
+      email?: string;
+      first_name?: string;
+      last_name?: string;
+      phone_number?: string;
+    };
+    return this.marketplaceService.ensureVendureCustomer(user.id, {
+      firstName: user.first_name,
+      lastName: user.last_name,
+      phoneNumber: user.phone_number,
+      emailAddress: user.email,
+      password: process.env.VENDURE_USER_PASSWORD || 'password',
+    });
   }
 }

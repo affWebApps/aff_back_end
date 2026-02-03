@@ -33,15 +33,17 @@ async function bootstrap() {
   await app.listen(port);
 
   // Heartbeat ping to keep the app warm (default: /v1/health) every ~13 minutes
-  const pingUrl = process.env.PING_URL ?? `https://aff-back-end.onrender.com/v1`;
-  const pingIntervalMs = Number(process.env.PING_INTERVAL_MS ?? 780_000); // 13 minutes
-  setInterval(async () => {
-    try {
-      await fetch(pingUrl);
-      Logger.log(`Pinged ${pingUrl}`, 'Heartbeat');
-    } catch (err) {
-      Logger.warn(`Heartbeat failed for ${pingUrl}: ${err}`, 'Heartbeat');
-    }
-  }, pingIntervalMs);
+  if (process.env.ENVIRONMENT !== 'local') {
+    const pingUrl = process.env.PING_URL ?? `https://aff-back-end.onrender.com/v1`;
+    const pingIntervalMs = Number(process.env.PING_INTERVAL_MS ?? 780_000); // 13 minutes
+    setInterval(async () => {
+      try {
+        await fetch(pingUrl);
+        Logger.log(`Pinged ${pingUrl}`, 'Heartbeat');
+      } catch (err) {
+        Logger.warn(`Heartbeat failed for ${pingUrl}: ${err}`, 'Heartbeat');
+      }
+    }, pingIntervalMs);
+  }
 }
 bootstrap();

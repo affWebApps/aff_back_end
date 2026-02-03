@@ -63,6 +63,10 @@ export class AuthService {
     };
   }
 
+  async logout() {
+    return { message: "Logged out" }
+  }
+
   async register(dto: RegisterDto) {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
