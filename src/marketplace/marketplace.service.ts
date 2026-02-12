@@ -37,6 +37,7 @@ export class MarketplaceService {
     this.adminClient = new GraphQLClient(adminApi);
   }
 
+
   async listCollectionProducts(skip = 0, take = 20, slug = 'electronics') {
     const result = await this.client.request(GetCollectionProductsQuery, {
       slug,

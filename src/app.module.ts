@@ -15,6 +15,7 @@ import { BlogsModule } from './blogs/blogs.module';
 import { AdminModule } from './admin/admin.module';
 import { VendureModule } from './vendure/vendure.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
+import { MedusaModule } from './medusa/medusa.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
     AdminModule,
     BlogsModule,
     MarketplaceModule,
+    MedusaModule,
     VendureModule,
     UsersModule,
   ],
