@@ -35,15 +35,15 @@ export class VendureService {
       select: {
         id: true,
         email: true,
-        vendure_customer_id: true,
-        vendure_vendor_id: true,
+        customer_id: true,
+        vendor_id: true,
       },
     });
     if (!user) {
       throw new Error('User not found');
     }
 
-    let { vendure_customer_id: customerId, vendure_vendor_id: vendorId } = user;
+    let { customer_id: customerId, vendor_id: vendorId } = user;
 
     // If both exist, nothing to do
     if (customerId && vendorId) {
@@ -61,8 +61,8 @@ export class VendureService {
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        vendure_customer_id: customerId,
-        vendure_vendor_id: vendorId,
+        customer_id: customerId,
+        vendor_id: vendorId,
       },
     });
 

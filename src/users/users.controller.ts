@@ -15,7 +15,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
-  getProfile(@Req() request: Request) {
+  async getProfile(@Req() request: Request) {
     return this.usersService.buildProfile(request.user);
   }
 

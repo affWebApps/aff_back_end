@@ -1,6 +1,7 @@
-import { Controller, Get, Headers, Query, HttpException, Param } from '@nestjs/common';
+import { Controller, Get, Headers, Query, HttpException, Param, Post, UseGuards, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MedusaService, MedusaListProductsParams } from './medusa.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Medusa Store')
 @Controller({ path: 'store', version: '1' })
@@ -119,6 +120,47 @@ export class MedusaController {
         err?.response?.data?.message ||
         err?.message ||
         'Failed to fetch product from Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('vendors')
+  @ApiOperation({ summary: 'Create Medusa vendor for the authenticated user' })
+  async createVendor(@Req() req: any) {
+    if (req.user.vendorId && req.user.vendorId.length > 0) {
+      return { message: "Vendor already exists" }
+    }
+    try {
+      return await this.medusaService.createVendorForUser(req.user);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to create vendor in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @Post('customers')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create Medusa customer via store API' })
+  async createCustomer(@Req() req: any) {
+    try {
+      return await this.medusaService.createCustomerForUser(req.user);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to create customer in Medusa';
       const status =
         err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
           ? err.response.status

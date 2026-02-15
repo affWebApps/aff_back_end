@@ -62,6 +62,8 @@ export class UsersService {
         bids: true,
         created_at: true,
         updated_at: true,
+        customer_id: true,
+        vendor_id: true,
       },
     }) as unknown as User | null;
   }

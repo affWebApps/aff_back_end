@@ -176,12 +176,12 @@ export class MarketplaceService {
         first_name: true,
         last_name: true,
         phone_number: true,
-        vendure_customer_id: true,
+        customer_id: true,
       },
     });
     if (!user) throw new Error('User not found');
-    if (user.vendure_customer_id) {
-      return { vendureCustomerId: user.vendure_customer_id };
+    if (user.customer_id) {
+      return { vendureCustomerId: user.customer_id };
     }
 
     const adminToken = await this.vendureAuthService.getAdminToken();
@@ -227,7 +227,7 @@ export class MarketplaceService {
 
       await this.prisma.user.update({
         where: { id: userId },
-        data: { vendure_customer_id: data.id },
+        data: { customer_id: data.id },
       });
       return { vendureCustomerId: data.id };
     } catch (err: any) {
