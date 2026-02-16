@@ -16,6 +16,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { OAuthCodeDto } from './dto/oauth-code.dto';
 import { Logger } from '@nestjs/common';
+import { MedusaService } from '../medusa/medusa.service';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +28,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly medusaService: MedusaService,
   ) { }
 
   async validateUser(email: string, password: string) {
@@ -55,6 +57,16 @@ export class AuthService {
   async login(user: { id: string; email: string }) {
     if (!user) {
       throw new UnauthorizedException();
+    }
+    // Ensure Medusa customer exists
+    try {
+      const fullUser = await this.usersService.findById(user.id);
+      if (fullUser && !(fullUser as any).customer_id) {
+        await this.medusaService.createCustomerForUser(fullUser as any);
+      }
+    } catch (err: any) {
+      this.logger.error('Medusa customer ensure failed at login', err?.response?.data ?? err?.message ?? err);
+      // do not block login
     }
 
     const payload = { sub: user.id, email: user.email };
@@ -109,11 +121,28 @@ export class AuthService {
         updates.avatar_url = data.avatarUrl;
       }
       if (Object.keys(updates).length > 0) {
-        return this.usersService.updateUser(existingUser.id, {
+        const updated = await this.usersService.updateUser(existingUser.id, {
           firstName: updates.first_name,
           lastName: updates.last_name,
           avatarUrl: updates.avatar_url,
         });
+        try {
+          const fresh = await this.usersService.findById(existingUser.id);
+          if (fresh && !(fresh as any).customer_id) {
+            await this.medusaService.createCustomerForUser(fresh as any);
+          }
+        } catch (err: any) {
+          this.logger.error('Medusa customer ensure failed (OAuth existing)', err?.response?.data ?? err?.message ?? err);
+        }
+        return updated;
+      }
+      try {
+        const fresh = await this.usersService.findById(existingUser.id);
+        if (fresh && !(fresh as any).customer_id) {
+          await this.medusaService.createCustomerForUser(fresh as any);
+        }
+      } catch (err: any) {
+        this.logger.error('Medusa customer ensure failed (OAuth existing no updates)', err?.response?.data ?? err?.message ?? err);
       }
       return existingUser;
     }
@@ -123,7 +152,7 @@ export class AuthService {
       10,
     );
 
-    return this.usersService.create({
+    const created = await this.usersService.create({
       email: data.email,
       passwordHash: generatedPassword,
       firstName: data.firstName,
@@ -132,6 +161,15 @@ export class AuthService {
       isVerified: true,
       avatarUrl: data.avatarUrl
     });
+    try {
+      const fresh = await this.usersService.findById(created.id);
+      if (fresh && !(fresh as any).customer_id) {
+        await this.medusaService.createCustomerForUser(fresh as any);
+      }
+    } catch (err: any) {
+      this.logger.error('Medusa customer ensure failed (OAuth new user)', err?.response?.data ?? err?.message ?? err);
+    }
+    return created;
   }
 
   createOAuthCode(user: { id: string; email: string }, provider: string) {

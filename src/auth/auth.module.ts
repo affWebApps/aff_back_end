@@ -13,11 +13,13 @@ import { MailModule } from '../mail/mail.module';
 import { FacebookAuthGuard } from './guards/facebook-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
+import { MedusaModule } from '../medusa/medusa.module';
 
 @Module({
   imports: [
     ConfigModule,
     UsersModule,
+    MedusaModule,
     PassportModule,
     MailModule,
     JwtModule.registerAsync({
