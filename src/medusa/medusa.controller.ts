@@ -136,7 +136,7 @@ export class MedusaController {
       return { message: "Vendor already exists" }
     }
     try {
-      return await this.medusaService.createVendorForUser(req.user);
+      return await this.medusaService.createVendorForUser(req.user, req.body.logo, req.body.handle);
     } catch (err: any) {
       const message =
         err?.response?.data?.message ||

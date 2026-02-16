@@ -106,7 +106,7 @@ export class MedusaService {
         fields: "id, thumbnail,title",
         region_id: this.config.get<string>('MEDUSA_REGION_ID'),
       });
-      const product_results = res.products.map((product) => {
+      const products = res.products.map((product) => {
         return {
           id: product.id,
           thumbnail: product.thumbnail,
@@ -114,7 +114,7 @@ export class MedusaService {
           price: product.variants[0]?.calculated_price?.original_amount || 2000,
         }
       })
-      return { product_results, count: res.count, offset: res.offset, limit: res.limit };
+      return { products, count: res.count, offset: res.offset, limit: res.limit };
     } catch (err: any) {
       this.logger.error('Medusa listProducts failed', err?.response?.data ?? err?.message ?? err);
       throw err;
@@ -139,7 +139,7 @@ export class MedusaService {
       const vendor = productVendor.data
       return {
         ...res,
-        ...vendor
+        vendor
       };
     } catch (err: any) {
       this.logger.error('Medusa getProductById failed', err?.response?.data ?? err?.message ?? err);
@@ -168,7 +168,7 @@ export class MedusaService {
 
     const url = `${this.storeApi}/store/products-by-vendor`;
     try {
-      const params: Record<string, any> = { offset, limit: take };
+      const params: Record<string, any> = { skip: offset, take };
       if (salesChannelId) params.sales_channel_id = salesChannelId;
       if (typeId) params.type_id = typeId;
       if (collectionId) params.collection_id = collectionId;
@@ -179,7 +179,15 @@ export class MedusaService {
           headers: { 'x-publishable-api-key': key },
         }),
       );
-      return res.data;
+      const products = res.data.map((product) => {
+        return {
+          id: product.id,
+          thumbnail: product.thumbnail,
+          title: product.title,
+          price: product.variants[0]?.prices[0]?.amount,
+        }
+      })
+      return { products };
     } catch (err: any) {
       this.logger.error('Medusa listProducts failed', err?.response?.data ?? err?.message ?? err);
       throw err;
@@ -217,7 +225,6 @@ export class MedusaService {
       if (!user.vendor_id) {
         try {
           token = await this.storeRegister(email, password, key);
-          console.log('after registeration', token)
         } catch (e) {
           this.logger.warn('Medusa register failed, attempting login', e?.response?.data ?? e?.message ?? e);
         }
@@ -261,6 +268,7 @@ export class MedusaService {
   }
 
   async createVendorForUser(user: {
+    id: string;
     email: string;
     customer_id?: string;
     vendor_id?: string;
@@ -268,7 +276,7 @@ export class MedusaService {
     last_name?: string;
     name?: string;
     avatar_url?: string;
-  }, logo_url?: string) {
+  }, logo_url: string, handle: string) {
 
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
     if (user.vendor_id) {
@@ -307,10 +315,11 @@ export class MedusaService {
     if (!token) throw new Error('Medusa auth token not returned');
 
     try {
+      const defaultVendorLogo = 'https://ehdequyzbusoegqogznj.supabase.co/storage/v1/object/public/AFF%20Bucket/public/AFF%20Shopping%20bag.jpg'
       const vendorPayload = {
         name: user.name ?? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim(),
-        handle: user.email,
-        logo: logo_url || user.avatar_url,
+        handle: handle || user.name,
+        logo: logo_url || user.avatar_url || defaultVendorLogo,
         admin: {
           email: user.email,
           first_name: user.first_name ?? user.name ?? '',
@@ -318,7 +327,7 @@ export class MedusaService {
         },
       };
 
-      const vendorRes = await firstValueFrom(
+      const newMedusaVendor = await firstValueFrom(
         this.http.post(vendorsUrl, vendorPayload, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -327,7 +336,22 @@ export class MedusaService {
         }),
       );
 
-      return vendorRes.data;
+      if (newMedusaVendor?.data?.vendor.id && user.email) {
+        try {
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: { vendor_id: newMedusaVendor?.data?.vendor.id },
+          });
+        } catch (updateErr: any) {
+          this.logger.error(
+            'Failed to persist customer_id locally after Medusa create',
+            updateErr?.response?.data ?? updateErr?.message ?? updateErr,
+          );
+          return { ...newMedusaVendor, savedLocally: false };
+        }
+      }
+
+      return newMedusaVendor.data;
     } catch (err: any) {
       this.logger.error('Medusa createVendorForUser failed', err?.response?.data ?? err?.message ?? err);
       throw err;
