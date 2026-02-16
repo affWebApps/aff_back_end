@@ -114,7 +114,8 @@ export class MedusaService {
           price: product.variants[0]?.calculated_price?.original_amount || 2000,
         }
       })
-      return { products, count: res.count, offset: res.offset, limit: res.limit };
+      const pagination = { count: res.count, offset: res.offset, limit: res.limit }
+      return { products, pagination };
     } catch (err: any) {
       this.logger.error('Medusa listProducts failed', err?.response?.data ?? err?.message ?? err);
       throw err;
@@ -168,7 +169,7 @@ export class MedusaService {
 
     const url = `${this.storeApi}/store/products-by-vendor`;
     try {
-      const params: Record<string, any> = { skip: offset, take };
+      const params: Record<string, any> = { offset, limit };
       if (salesChannelId) params.sales_channel_id = salesChannelId;
       if (typeId) params.type_id = typeId;
       if (collectionId) params.collection_id = collectionId;
@@ -179,7 +180,9 @@ export class MedusaService {
           headers: { 'x-publishable-api-key': key },
         }),
       );
-      const products = res.data.map((product) => {
+      const count = res.data.count
+      const pagination = { count, offset, limit }
+      const products = res.data.products.map((product) => {
         return {
           id: product.id,
           thumbnail: product.thumbnail,
@@ -187,7 +190,7 @@ export class MedusaService {
           price: product.variants[0]?.prices[0]?.amount,
         }
       })
-      return { products };
+      return { products, pagination };
     } catch (err: any) {
       this.logger.error('Medusa listProducts failed', err?.response?.data ?? err?.message ?? err);
       throw err;
