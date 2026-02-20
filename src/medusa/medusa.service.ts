@@ -67,6 +67,18 @@ export class MedusaService {
     return token
   }
 
+  async loginStoreCustomer(email: string, password: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    return this.storeLogin(email, password, this.publishableKey, "customer");
+  }
+
+  async loginVendor(email: string, password: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    return this.storeLogin(email, password, this.publishableKey, "vendor");
+  }
+
   private async storeUserCreate(customerPayload: any, key: string, token: string) {
     const client = this.getStoreClient(key);
     const { customer } = await client.store.customer.create(
@@ -133,10 +145,13 @@ export class MedusaService {
         fields: `+variants.inventory_quantity`,
         region_id: this.config.get<string>('MEDUSA_REGION_ID'),
       });
-      const product_vendorUrl = `${this.storeApi}/store/product`
-      const productVendor = await firstValueFrom(this.http.get(product_vendorUrl, {
-        headers: { 'x-publishable-api-key': this.publishableKey ?? '' },
-      }));
+      const product_vendorUrl = `${this.storeApi}/store/product`;
+      const productVendor = await firstValueFrom(
+        this.http.get(product_vendorUrl, {
+          params: { product_id: productId },
+          headers: { 'x-publishable-api-key': this.publishableKey ?? '' },
+        }),
+      );
       const vendor = productVendor.data
       return {
         ...res,
@@ -270,6 +285,94 @@ export class MedusaService {
     }
   }
 
+  /**
+   * Lightweight path used during sign-in/sign-up:
+   * 1) POST /auth/user/my-auth with x-aff-token (our JWT)
+   * 2) POST /vendors with same header to create vendor & customer
+   * 3) Persist ids to our user record
+   */
+  async syncVendorAndCustomerWithAffToken(userId: string, affToken: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+
+    const headers = {
+      'x-publishable-api-key': this.publishableKey,
+      'x-aff-token': affToken,
+    };
+    console.log(affToken, "is your aff token")
+
+    // We need user details to build vendor payload
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found for Medusa sync');
+
+    const defaultVendorLogo =
+      'https://ehdequyzbusoegqogznj.supabase.co/storage/v1/object/public/AFF%20Bucket/public/AFF%20Shopping%20bag.jpg';
+    const handle = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+    const vendorPayload = {
+      name: `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.email,
+      handle,
+      logo: user.avatar_url || defaultVendorLogo,
+      admin: {
+        email: user.email,
+        first_name: user.first_name ?? '',
+        last_name: user.last_name ?? '',
+      },
+    };
+
+    try {
+      // Authenticate with medusa using our token
+      await firstValueFrom(
+        this.http.post(`${this.storeApi}/auth/user/my-auth`, {}, { headers }),
+      );
+
+      // Create vendor (and customer) via combined endpoint with payload
+      const vendorRes = await firstValueFrom(
+        this.http.post(`${this.storeApi}/vendors`, vendorPayload, { headers }),
+      );
+
+      const vendorAdminId = vendorRes.data?.vendor?.admins[0]?.id;
+      const customerId = vendorRes.data?.customer?.id;
+
+      if (userId && (vendorAdminId || customerId)) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            vendor_id: vendorAdminId ?? undefined,
+            customer_id: customerId ?? undefined,
+          },
+        });
+      }
+
+      return vendorRes.data;
+    } catch (err: any) {
+      this.logger.error('Medusa syncVendorAndCustomerWithAffToken failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
+   * Proxy to Medusa /vendors/products with x-aff-token header.
+   */
+  async createVendorProducts(affToken: string, payload: any) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!affToken) throw new Error('affToken is required');
+
+    const headers = {
+      'x-aff-token': affToken,
+      ...(this.publishableKey ? { 'x-publishable-api-key': this.publishableKey } : {}),
+    };
+
+    try {
+      const res = await firstValueFrom(
+        this.http.post(`${this.storeApi}/vendors/products`, payload, { headers }),
+      );
+      return res.data;
+    } catch (err: any) {
+      this.logger.error('Medusa createVendorProducts failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
   async createVendorForUser(user: {
     id: string;
     email: string;
@@ -321,7 +424,7 @@ export class MedusaService {
       const defaultVendorLogo = 'https://ehdequyzbusoegqogznj.supabase.co/storage/v1/object/public/AFF%20Bucket/public/AFF%20Shopping%20bag.jpg'
       const vendorPayload = {
         name: user.name ?? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim(),
-        handle: handle || user.name,
+        handle: handle || `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim(),
         logo: logo_url || user.avatar_url || defaultVendorLogo,
         admin: {
           email: user.email,

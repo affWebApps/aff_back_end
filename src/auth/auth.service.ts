@@ -58,21 +58,16 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException();
     }
-    // Ensure Medusa customer exists
+    const payload = { sub: user.id, email: user.email };
+    const access_token = this.jwtService.sign(payload);
+
     try {
-      const fullUser = await this.usersService.findById(user.id);
-      if (fullUser && !(fullUser as any).customer_id) {
-        await this.medusaService.createCustomerForUser(fullUser as any);
-      }
+      await this.medusaService.syncVendorAndCustomerWithAffToken(user.id, access_token);
     } catch (err: any) {
-      this.logger.error('Medusa customer ensure failed at login', err?.response?.data ?? err?.message ?? err);
-      // do not block login
+      this.logger.error('Medusa sync failed at login', err?.response?.data ?? err?.message ?? err);
     }
 
-    const payload = { sub: user.id, email: user.email };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+    return { access_token };
   }
 
   async logout() {
@@ -92,6 +87,15 @@ export class AuthService {
       firstName: dto.firstName,
       lastName: dto.lastName,
     });
+
+    // Immediately sync with Medusa using the same two-call flow (my-auth -> vendors)
+    try {
+      const access_token = this.jwtService.sign({ sub: createdUser.id, email: createdUser.email });
+      await this.medusaService.syncVendorAndCustomerWithAffToken(createdUser.id, access_token);
+    } catch (err: any) {
+      this.logger.error('Medusa sync failed at register', err?.response?.data ?? err?.message ?? err);
+    }
+
     const token = await this.createVerificationToken(createdUser.id);
     await this.sendVerificationEmail(createdUser.email, token, dto.firstName);
 
@@ -128,21 +132,39 @@ export class AuthService {
         });
         try {
           const fresh = await this.usersService.findById(existingUser.id);
-          if (fresh && !(fresh as any).customer_id) {
-            await this.medusaService.createCustomerForUser(fresh as any);
+          if (fresh) {
+            if (!(fresh as any).customer_id) {
+              await this.medusaService.createCustomerForUser(fresh as any);
+            } else {
+              await this.medusaService.loginStoreCustomer(fresh.email, fresh.email);
+            }
+            if (!(fresh as any).vendor_id) {
+              await this.medusaService.createVendorForUser(fresh as any, fresh?.avatar_url ?? '', fresh?.display_name ?? fresh.email);
+            } else {
+              await this.medusaService.loginVendor(fresh.email, fresh.email);
+            }
           }
         } catch (err: any) {
-          this.logger.error('Medusa customer ensure failed (OAuth existing)', err?.response?.data ?? err?.message ?? err);
+          this.logger.error('Medusa customer/vendor ensure failed (OAuth existing)', err?.response?.data ?? err?.message ?? err);
         }
         return updated;
       }
       try {
         const fresh = await this.usersService.findById(existingUser.id);
-        if (fresh && !(fresh as any).customer_id) {
-          await this.medusaService.createCustomerForUser(fresh as any);
+        if (fresh) {
+          if (!(fresh as any).customer_id) {
+            await this.medusaService.createCustomerForUser(fresh as any);
+          } else {
+            await this.medusaService.loginStoreCustomer(fresh.email, fresh.email);
+          }
+          if (!(fresh as any).vendor_id) {
+            await this.medusaService.createVendorForUser(fresh as any, fresh?.avatar_url ?? '', fresh?.display_name ?? fresh.email);
+          } else {
+            await this.medusaService.loginVendor(fresh.email, fresh.email);
+          }
         }
       } catch (err: any) {
-        this.logger.error('Medusa customer ensure failed (OAuth existing no updates)', err?.response?.data ?? err?.message ?? err);
+        this.logger.error('Medusa customer/vendor ensure failed (OAuth existing no updates)', err?.response?.data ?? err?.message ?? err);
       }
       return existingUser;
     }
@@ -162,12 +184,11 @@ export class AuthService {
       avatarUrl: data.avatarUrl
     });
     try {
-      const fresh = await this.usersService.findById(created.id);
-      if (fresh && !(fresh as any).customer_id) {
-        await this.medusaService.createCustomerForUser(fresh as any);
-      }
+      // Obtain a short-lived JWT to use as x-aff-token
+      const tempToken = this.jwtService.sign({ sub: created.id, email: created.email });
+      await this.medusaService.syncVendorAndCustomerWithAffToken(created.id, tempToken);
     } catch (err: any) {
-      this.logger.error('Medusa customer ensure failed (OAuth new user)', err?.response?.data ?? err?.message ?? err);
+      this.logger.error('Medusa sync failed (OAuth new user)', err?.response?.data ?? err?.message ?? err);
     }
     return created;
   }

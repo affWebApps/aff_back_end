@@ -41,42 +41,6 @@ export class MedusaController {
     }
   }
 
-  // @Get('products/vendor')
-  // @ApiOperation({ summary: 'List Medusa products with pagination' })
-  // async listProductsByVendor(
-  //   @Query('page') page = '1',
-  //   @Query('limit') limit = '20',
-  //   @Query('type_id') typeId?: string,
-  //   @Query('vendor_id') vendorId?: string,
-  //   @Query('collection_id') collectionId?: string,
-  //   @Query('sales_channel_id') salesChannelId?: string,
-  //   @Headers('x-publishable-api-key') publishableKey?: string,
-  // ) {
-  //   console.log(collectionId)
-  //   try {
-  //     return await this.medusaService.listProductsbyVendor({
-  //       page: Number(page) || 1,
-  //       limit: Number(limit) || 20,
-  //       publishableKey,
-  //       typeId,
-  //       collectionId,
-  //       salesChannelId,
-  //       vendorId
-  //     });
-  //   } catch (err: any) {
-  //     const message =
-  //       err?.response?.data?.message ||
-  //       err?.message ||
-  //       'Failed to fetch products from Medusa';
-  //     // Use 502 Bad Gateway for upstream errors, 400 for bad input
-  //     const status =
-  //       err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
-  //         ? err.response.status
-  //         : 502;
-  //     throw new HttpException({ status, message }, status);
-  //   }
-  // }
-
   @Get('products-by-vendor')
   @ApiOperation({ summary: 'List Medusa products by vendor with pagination' })
   async listProductsByVendor(
@@ -129,6 +93,76 @@ export class MedusaController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('sync')
+  @ApiOperation({ summary: 'Sync Medusa vendor & customer using current AFF token' })
+  async syncVendorAndCustomer(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    console.log(token)
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
+    try {
+      return await this.medusaService.syncVendorAndCustomerWithAffToken(req.user.id, token);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to sync vendor/customer in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('vendors/products')
+  @ApiOperation({ summary: 'Create/Update vendor products via Medusa (proxies payload)' })
+  async createVendorProducts(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
+    try {
+      return await this.medusaService.createVendorProducts(token, req.body);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to create vendor products in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  //Redacted
+  @Post('customers')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create Medusa customer via store API' })
+  async createCustomer(@Req() req: any) {
+    try {
+      return await this.medusaService.createCustomerForUser(req.user);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to create customer in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  //Redacted
+  @UseGuards(JwtAuthGuard)
   @Post('vendors')
   @ApiOperation({ summary: 'Create Medusa vendor for the authenticated user' })
   async createVendor(@Req() req: any) {
@@ -150,22 +184,4 @@ export class MedusaController {
     }
   }
 
-  @Post('customers')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Create Medusa customer via store API' })
-  async createCustomer(@Req() req: any) {
-    try {
-      return await this.medusaService.createCustomerForUser(req.user);
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message ||
-        err?.message ||
-        'Failed to create customer in Medusa';
-      const status =
-        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
-          ? err.response.status
-          : 502;
-      throw new HttpException({ status, message }, status);
-    }
-  }
 }

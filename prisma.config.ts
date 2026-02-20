@@ -2,6 +2,7 @@ import { defineConfig, env } from "prisma/config";
 import 'dotenv/config'
 
 let connectionString
+
 if (process.env.ENVIRONMENT == 'local') {
   connectionString = process.env.LOCAL_DATABASE_URL
 }
@@ -11,7 +12,6 @@ else if (process.env.ENVIRONMENT == 'dev') {
 else {
   connectionString = process.env.PRODUCTION_DATABASE_URL
 }
-
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
