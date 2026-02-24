@@ -133,16 +133,8 @@ export class AuthService {
         try {
           const fresh = await this.usersService.findById(existingUser.id);
           if (fresh) {
-            if (!(fresh as any).customer_id) {
-              await this.medusaService.createCustomerForUser(fresh as any);
-            } else {
-              await this.medusaService.loginStoreCustomer(fresh.email, fresh.email);
-            }
-            if (!(fresh as any).vendor_id) {
-              await this.medusaService.createVendorForUser(fresh as any, fresh?.avatar_url ?? '', fresh?.display_name ?? fresh.email);
-            } else {
-              await this.medusaService.loginVendor(fresh.email, fresh.email);
-            }
+            const affToken = this.jwtService.sign({ sub: fresh.id, email: fresh.email });
+            await this.medusaService.syncVendorAndCustomerWithAffToken(fresh.id, affToken);
           }
         } catch (err: any) {
           this.logger.error('Medusa customer/vendor ensure failed (OAuth existing)', err?.response?.data ?? err?.message ?? err);
@@ -152,16 +144,8 @@ export class AuthService {
       try {
         const fresh = await this.usersService.findById(existingUser.id);
         if (fresh) {
-          if (!(fresh as any).customer_id) {
-            await this.medusaService.createCustomerForUser(fresh as any);
-          } else {
-            await this.medusaService.loginStoreCustomer(fresh.email, fresh.email);
-          }
-          if (!(fresh as any).vendor_id) {
-            await this.medusaService.createVendorForUser(fresh as any, fresh?.avatar_url ?? '', fresh?.display_name ?? fresh.email);
-          } else {
-            await this.medusaService.loginVendor(fresh.email, fresh.email);
-          }
+          const affToken = this.jwtService.sign({ sub: fresh.id, email: fresh.email });
+          await this.medusaService.syncVendorAndCustomerWithAffToken(fresh.id, affToken);
         }
       } catch (err: any) {
         this.logger.error('Medusa customer/vendor ensure failed (OAuth existing no updates)', err?.response?.data ?? err?.message ?? err);

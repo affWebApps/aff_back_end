@@ -299,11 +299,19 @@ export class MedusaService {
       'x-publishable-api-key': this.publishableKey,
       'x-aff-token': affToken,
     };
-    console.log(affToken, "is your aff token")
 
     // We need user details to build vendor payload
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new Error('User not found for Medusa sync');
+
+    // Skip if already synced to avoid extra upstream calls
+    if (user.vendor_id && user.customer_id) {
+      return {
+        message: 'Medusa sync skipped; IDs already present',
+        vendor_id: user.vendor_id,
+        customer_id: user.customer_id,
+      };
+    }
 
     const defaultVendorLogo =
       'https://ehdequyzbusoegqogznj.supabase.co/storage/v1/object/public/AFF%20Bucket/public/AFF%20Shopping%20bag.jpg';
