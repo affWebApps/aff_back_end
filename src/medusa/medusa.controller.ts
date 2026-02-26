@@ -93,6 +93,30 @@ export class MedusaController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('cart')
+  @ApiOperation({ summary: 'Ensure and return current user cart' })
+  async ensureCart(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
+    try {
+      return await this.medusaService.ensureCartForUser(token);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to ensure cart in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('sync')
   @ApiOperation({ summary: 'Sync Medusa vendor & customer using current AFF token' })
   async syncVendorAndCustomer(@Req() req: any) {
@@ -141,18 +165,28 @@ export class MedusaController {
     }
   }
 
-  //Redacted
-  @Post('customers')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Create Medusa customer via store API' })
-  async createCustomer(@Req() req: any) {
+  @Post('cart/add-to-cart')
+  @ApiOperation({ summary: 'Add item to cart (uses provided cart_id or ensures one)' })
+  async addToCart(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
+
+    const { variant_id, quantity, cart_id } = req.body ?? {};
+    if (!variant_id) {
+      throw new HttpException({ status: 400, message: 'variant_id is required' }, 400);
+    }
+
     try {
-      return await this.medusaService.createCustomerForUser(req.user);
+      return await this.medusaService.addToCart(token, variant_id, quantity ?? 1, cart_id);
     } catch (err: any) {
       const message =
         err?.response?.data?.message ||
         err?.message ||
-        'Failed to create customer in Medusa';
+        'Failed to add item to cart in Medusa';
       const status =
         err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
           ? err.response.status
@@ -161,21 +195,28 @@ export class MedusaController {
     }
   }
 
-  //Redacted
   @UseGuards(JwtAuthGuard)
-  @Post('vendors')
-  @ApiOperation({ summary: 'Create Medusa vendor for the authenticated user' })
-  async createVendor(@Req() req: any) {
-    if (req.user.vendorId && req.user.vendorId.length > 0) {
-      return { message: "Vendor already exists" }
+  @Post('cart/remove-item')
+  @ApiOperation({ summary: 'Remove item from cart (uses provided cart_id or ensures one)' })
+  async removeFromCart(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
     }
+
+    const { item_id, cart_id } = req.body ?? {};
+    if (!item_id) {
+      throw new HttpException({ status: 400, message: 'item_id is required' }, 400);
+    }
+
     try {
-      return await this.medusaService.createVendorForUser(req.user, req.body.logo, req.body.handle);
+      return await this.medusaService.removeFromCart(token, item_id, cart_id);
     } catch (err: any) {
       const message =
         err?.response?.data?.message ||
         err?.message ||
-        'Failed to create vendor in Medusa';
+        'Failed to remove item from cart in Medusa';
       const status =
         err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
           ? err.response.status
@@ -183,5 +224,39 @@ export class MedusaController {
       throw new HttpException({ status, message }, status);
     }
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('cart/update-item')
+  @ApiOperation({ summary: 'Update quantity of an item in cart (uses provided cart_id or ensures one)' })
+  async updateCartItem(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
+
+    const { item_id, quantity, cart_id } = req.body ?? {};
+    if (!item_id) {
+      throw new HttpException({ status: 400, message: 'item_id is required' }, 400);
+    }
+    if (quantity === undefined || quantity === null) {
+      throw new HttpException({ status: 400, message: 'quantity is required' }, 400);
+    }
+
+    try {
+      return await this.medusaService.updateCartItem(token, item_id, quantity, cart_id);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to update item in cart in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
 
 }

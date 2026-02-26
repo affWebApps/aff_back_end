@@ -63,6 +63,7 @@ export class AuthService {
 
     try {
       await this.medusaService.syncVendorAndCustomerWithAffToken(user.id, access_token);
+      await this.medusaService.ensureCartForUser(access_token);
     } catch (err: any) {
       this.logger.error('Medusa sync failed at login', err?.response?.data ?? err?.message ?? err);
     }

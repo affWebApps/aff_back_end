@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Req, UseGuards, Param } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req, UseGuards, Param, HttpException } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -10,13 +10,16 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 @ApiBearerAuth()
 @Controller({ path: 'users', version: '1' })
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(
+    private readonly usersService: UsersService,
+  ) { }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@Req() request: Request) {
-    return this.usersService.buildProfile(request.user);
+    const profile = await this.usersService.buildProfile(request.user);
+    return profile;
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
