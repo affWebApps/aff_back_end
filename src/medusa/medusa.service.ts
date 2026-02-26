@@ -4,6 +4,7 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import Medusa from '@medusajs/js-sdk';
 import { PrismaService } from '../prisma/prisma.service';
+import { StoreCart } from '@medusajs/types';
 
 export interface MedusaListProductsParams {
   page?: number;
@@ -489,6 +490,156 @@ export class MedusaService {
       return { cart, item_count };
     } catch (err: any) {
       this.logger.error('Medusa updateCartItem failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
+   * Update cart details (email, shipping & billing addresses).
+   */
+  async updateCartDetails(
+    affToken: string,
+    updates: { email?: string; shipping_address?: any; billing_address?: any },
+    cartId?: string,
+  ) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    if (!affToken) throw new Error('affToken is required');
+
+    let resolvedCartId = cartId?.trim();
+    if (!resolvedCartId) {
+      const cart = await this.ensureCartForUser(affToken);
+      resolvedCartId = cart?.cart?.id
+    }
+    if (!resolvedCartId) throw new Error('Unable to obtain cart_id from Medusa');
+
+    const client = this.getStoreClient(this.publishableKey);
+    try {
+      const updated = await client.store.cart.update(resolvedCartId, updates);
+      const cart = updated.cart
+      const item_count = cart?.items?.reduce((sum, item) => sum + item.quantity, 0);
+      return { cart, item_count };
+    } catch (err: any) {
+      this.logger.error('Medusa updateCartDetails failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
+   * Add a shipping method to a cart.
+   */
+  async addShippingMethodToCart(affToken: string, optionId: string, cartId?: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    if (!affToken) throw new Error('affToken is required');
+    if (!optionId) throw new Error('option_id is required');
+
+    let resolvedCartId = cartId?.trim();
+    if (!resolvedCartId) {
+      const cart = await this.ensureCartForUser(affToken);
+      resolvedCartId = cart?.cart?.id
+    }
+    if (!resolvedCartId) throw new Error('Unable to obtain cart_id from Medusa');
+
+    const client = this.getStoreClient(this.publishableKey);
+    try {
+      const updated = await client.store.cart.addShippingMethod(resolvedCartId, {
+        option_id: optionId,
+      });
+      const cart = updated.cart;
+      const item_count = cart?.items?.reduce((sum, item) => sum + item.quantity, 0);
+      return { cart, item_count };
+    } catch (err: any) {
+      this.logger.error('Medusa addShippingMethodToCart failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
+   * Create payment sessions and select provider for cart.
+   */
+  async initiatePaymentSession(
+    affToken: string,
+    providerId: string,
+    email: string,
+    cartId?: string,
+  ) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    if (!affToken) throw new Error('affToken is required');
+    if (!providerId) throw new Error('provider_id is required');
+
+    let cartObj: StoreCart
+    if (cartId?.trim()) {
+      const fetched = await this.getCart(cartId.trim(), this.publishableKey);
+      cartObj = fetched.cart
+    } else {
+      const ensured = await this.ensureCartForUser(affToken);
+      cartObj = ensured.cart;
+    }
+    if (!cartObj?.id) throw new Error('Unable to obtain cart_id from Medusa');
+
+    const client = this.getStoreClient(this.publishableKey);
+    const headers: Record<string, string> = { 'x-aff-token': affToken };
+    if (this.publishableKey) headers['x-publishable-api-key'] = this.publishableKey;
+
+    try {
+      const resp = await client.store.payment.initiatePaymentSession(
+        cartObj,
+        {
+          provider_id: providerId,
+          data: {
+            email: "email",
+          }
+        },
+        undefined,
+        headers,
+      );
+      return resp;
+    } catch (err: any) {
+      this.logger.error('Medusa initiatePaymentSession failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
+   * Complete cart -> order.
+   */
+  async completeCart(affToken: string, cartId?: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    if (!affToken) throw new Error('affToken is required');
+
+    let resolvedCartId = cartId?.trim();
+    if (!resolvedCartId) {
+      const cart = await this.ensureCartForUser(affToken);
+      resolvedCartId = cart?.cart?.id
+    }
+    if (!resolvedCartId) throw new Error('Unable to obtain cart_id from Medusa');
+
+    const client = this.getStoreClient(this.publishableKey);
+    try {
+      const result = await client.store.cart.complete(resolvedCartId);
+      return result;
+    } catch (err: any) {
+      this.logger.error('Medusa completeCart failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
+   * Retrieve order by id.
+   */
+  async retrieveOrder(orderId: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    if (!orderId) throw new Error('orderId is required');
+    const client = this.getStoreClient(this.publishableKey);
+    try {
+      const res = await client.store.order.retrieve(orderId);
+      return res;
+    } catch (err: any) {
+      this.logger.error('Medusa retrieveOrder failed', err?.response?.data ?? err?.message ?? err);
       throw err;
     }
   }

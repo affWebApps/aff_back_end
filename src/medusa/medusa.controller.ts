@@ -258,5 +258,125 @@ export class MedusaController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('cart/update')
+  @ApiOperation({ summary: 'Update cart details (email, shipping, billing)' })
+  async updateCart(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+
+    const { email, shipping_address, billing_address, cart_id } = req.body ?? {};
+    try {
+      return await this.medusaService.updateCartDetails(token, { email, shipping_address, billing_address }, cart_id);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to update cart in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('cart/shipping-method')
+  @ApiOperation({ summary: 'Add shipping method to cart' })
+  async addShippingMethod(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+
+    const { option_id, cart_id } = req.body ?? {};
+    if (!option_id) throw new HttpException({ status: 400, message: 'option_id is required' }, 400);
+
+    try {
+      return await this.medusaService.addShippingMethodToCart(token, option_id, cart_id);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to add shipping method in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('cart/payment-session')
+  @ApiOperation({ summary: 'Initiate/select payment session for cart' })
+  async initiatePaymentSession(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    const email = req.user?.email
+    if (!token) throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+
+    const { provider_id, cart_id } = req.body ?? {};
+    if (!provider_id) throw new HttpException({ status: 400, message: 'provider_id is required' }, 400);
+
+    try {
+      return await this.medusaService.initiatePaymentSession(token, provider_id, cart_id, email);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to initiate payment session in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('cart/complete')
+  @ApiOperation({ summary: 'Complete cart and place order' })
+  async completeCart(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+
+    const { cart_id } = req.body ?? {};
+    try {
+      return await this.medusaService.completeCart(token, cart_id);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to complete cart in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('orders/:id')
+  @ApiOperation({ summary: 'Retrieve order by id' })
+  async getOrder(@Param('id') id: string) {
+    try {
+      return await this.medusaService.retrieveOrder(id);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to retrieve order in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
 
 }
