@@ -116,6 +116,25 @@ export class MedusaController {
     }
   }
 
+  @Get('payment-providers')
+  @ApiOperation({ summary: 'List available payment providers (optionally by region)' })
+  async listPaymentProviders(@Query('region_id') regionId?: string) {
+    try {
+      const defaultRegion = process.env.MEDUSA_REGION_ID;
+      return await this.medusaService.listPaymentProviders(regionId || defaultRegion);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to list payment providers from Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('sync')
   @ApiOperation({ summary: 'Sync Medusa vendor & customer using current AFF token' })
@@ -266,7 +285,8 @@ export class MedusaController {
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
     if (!token) throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
 
-    const { email, shipping_address, billing_address, cart_id } = req.body ?? {};
+    const { shipping_address, billing_address, cart_id } = req.body ?? {};
+    const email = req.user.email
     try {
       return await this.medusaService.updateCartDetails(token, { email, shipping_address, billing_address }, cart_id);
     } catch (err: any) {
@@ -321,7 +341,7 @@ export class MedusaController {
     if (!provider_id) throw new HttpException({ status: 400, message: 'provider_id is required' }, 400);
 
     try {
-      return await this.medusaService.initiatePaymentSession(token, provider_id, cart_id, email);
+      return await this.medusaService.initiatePaymentSession(token, provider_id, email, cart_id);
     } catch (err: any) {
       const message =
         err?.response?.data?.message ||

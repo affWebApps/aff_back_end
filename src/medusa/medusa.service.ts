@@ -589,7 +589,7 @@ export class MedusaService {
         {
           provider_id: providerId,
           data: {
-            email: "email",
+            email
           }
         },
         undefined,
@@ -640,6 +640,23 @@ export class MedusaService {
       return res;
     } catch (err: any) {
       this.logger.error('Medusa retrieveOrder failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
+   * List available payment providers (optionally filtered by region).
+   */
+  async listPaymentProviders(regionId?: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    const client = this.getStoreClient(this.publishableKey);
+    try {
+      return await client.store.payment.listPaymentProviders(
+        regionId ? { region_id: regionId } : { region_id: "" },
+      );
+    } catch (err: any) {
+      this.logger.error('Medusa listPaymentProviders failed', err?.response?.data ?? err?.message ?? err);
       throw err;
     }
   }
