@@ -136,6 +136,30 @@ export class MedusaController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('paystack-verify')
+  @ApiOperation({ summary: 'Verify Paystack payment status by reference' })
+  async verifyPaystack(@Req() req: any, @Query('reference') reference: string) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!reference) {
+      throw new HttpException({ status: 400, message: 'reference is required' }, 400);
+    }
+    try {
+      return await this.medusaService.verifyPaystackPayment(reference, token);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to verify Paystack payment';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('sync')
   @ApiOperation({ summary: 'Sync Medusa vendor & customer using current AFF token' })
   async syncVendorAndCustomer(@Req() req: any) {

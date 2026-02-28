@@ -645,6 +645,28 @@ export class MedusaService {
   }
 
   /**
+   * Verify Paystack payment status via Medusa custom endpoint.
+   */
+  async verifyPaystackPayment(reference: string, affToken?: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!reference) throw new Error('reference is required');
+
+    const headers: Record<string, string> = {};
+    if (this.publishableKey) headers['x-publishable-api-key'] = this.publishableKey;
+    if (affToken) headers['x-aff-token'] = affToken;
+
+    try {
+      const res = await firstValueFrom(
+        this.http.get(`${this.storeApi}/store/paystack-verify`, { params: { reference }, headers }),
+      );
+      return res.data;
+    } catch (err: any) {
+      this.logger.error('Medusa verifyPaystackPayment failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
    * List available payment providers (optionally filtered by region).
    */
   async listPaymentProviders(regionId?: string) {
