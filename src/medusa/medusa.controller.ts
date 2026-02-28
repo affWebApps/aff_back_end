@@ -136,6 +136,26 @@ export class MedusaController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('cart/options')
+  @ApiOperation({ summary: 'List fulfillment/shipping options for a cart' })
+  async listCartOptions(@Query('cart_id') cartId?: string) {
+    if (!cartId) throw new HttpException({ status: 400, message: 'cart_id is required' }, 400);
+    try {
+      return await this.medusaService.listCartOptions(cartId);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to list cart options from Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('paystack-verify')
   @ApiOperation({ summary: 'Verify Paystack payment status by reference' })
   async verifyPaystack(@Req() req: any, @Query('reference') reference: string) {

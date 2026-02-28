@@ -589,7 +589,7 @@ export class MedusaService {
         {
           provider_id: providerId,
           data: {
-            email
+            email,
           }
         },
         undefined,
@@ -675,10 +675,26 @@ export class MedusaService {
     const client = this.getStoreClient(this.publishableKey);
     try {
       return await client.store.payment.listPaymentProviders(
-        regionId ? { region_id: regionId } : { region_id: "" },
+        regionId ? { region_id: regionId } : undefined,
       );
     } catch (err: any) {
       this.logger.error('Medusa listPaymentProviders failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
+   * List fulfillment/shipping options for a cart.
+   */
+  async listCartOptions(cartId: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    if (!cartId) throw new Error('cart_id is required');
+    const client = this.getStoreClient(this.publishableKey);
+    try {
+      return await client.store.fulfillment.listCartOptions({ cart_id: cartId });
+    } catch (err: any) {
+      this.logger.error('Medusa listCartOptions failed', err?.response?.data ?? err?.message ?? err);
       throw err;
     }
   }
