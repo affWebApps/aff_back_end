@@ -71,8 +71,18 @@ export class MedusaService {
   private async getCart(id: string, key: string) {
     const client = this.getStoreClient(key);
     const cart_response = await client.store.cart.retrieve(id, {
-      fields: "items.id, items.title,items.quantity, items.thumbnail, items.unit_price, region_id, subtotal, total, shipping_total, shipping_subtotal, billing_address"
+      fields: "items.id, items.title,items.quantity, items.product_id, items.variant_id, items.thumbnail, items.unit_price, region_id, subtotal, total, shipping_total, shipping_subtotal, shipping_methods, billing_address"
     })
+    const cart = cart_response?.cart
+    const item_count = cart?.items?.reduce((sum, item) => sum + item.quantity, 0)
+    return {
+      cart,
+      item_count
+    }
+  }
+  private async getFullCart(id: string, key: string) {
+    const client = this.getStoreClient(key);
+    const cart_response = await client.store.cart.retrieve(id)
     const cart = cart_response?.cart
     const item_count = cart?.items?.reduce((sum, item) => sum + item.quantity, 0)
     return {
@@ -398,13 +408,17 @@ export class MedusaService {
   /**
    * Add a line item to the current user's cart, creating/retrieving the cart first.
    */
-  async addToCart(affToken: string, variantId: string, quantity: number, cartId?: string) {
+  async addToCart(affToken: string, variantId: string, quantity: number, cartId?: string, productId?: string) {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
     if (!affToken) throw new Error('affToken is required');
     if (!variantId) throw new Error('variantId is required');
     const qty = Number(quantity) || 1;
     if (qty <= 0) throw new Error('quantity must be greater than 0');
+
+    if (!productId) {
+      throw new Error('productId is required to validate stock before adding to cart');
+    }
 
     let resolvedCartId = cartId?.trim();
     if (!resolvedCartId) {
@@ -418,6 +432,17 @@ export class MedusaService {
 
     const client = this.getStoreClient(this.publishableKey);
     try {
+      const productRes = await client.store.product.retrieve(productId, {
+        fields: '*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory',
+      });
+      const variant = productRes.product?.variants?.find((v: any) => v.id === variantId);
+      if (!variant) throw new Error('Variant not found for product');
+      const manageInventory = variant.manage_inventory ?? true;
+      const availableQty = variant.inventory_quantity ?? 0;
+      if (manageInventory && availableQty < qty) {
+        throw new Error('Insufficient stock for this variant');
+      }
+
       const updated = await client.store.cart.createLineItem(resolvedCartId, {
         variant_id: variantId,
         quantity: qty,
@@ -724,6 +749,10 @@ export class MedusaService {
       this.logger.error('Medusa ensureCartForUser failed', err?.response?.data ?? err?.message ?? err);
       throw err;
     }
+  }
+
+  async getFullCartForUser(cartId: string) {
+    return await this.getFullCart(cartId, this.publishableKey)
   }
 
   async createVendorForUser(user: {

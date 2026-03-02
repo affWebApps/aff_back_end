@@ -115,6 +115,30 @@ export class MedusaController {
       throw new HttpException({ status, message }, status);
     }
   }
+  @UseGuards(JwtAuthGuard)
+  @Get('full-cart')
+  @ApiOperation({ summary: 'Ensure and return current user cart' })
+  async getFullCart(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    const cartId = req.body.cart_id;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
+    try {
+      return await this.medusaService.getFullCartForUser(cartId);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to ensure cart in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
 
   @Get('payment-providers')
   @ApiOperation({ summary: 'List available payment providers (optionally by region)' })
@@ -238,13 +262,16 @@ export class MedusaController {
       throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
     }
 
-    const { variant_id, quantity, cart_id } = req.body ?? {};
+    const { variant_id, quantity, cart_id, product_id } = req.body ?? {};
     if (!variant_id) {
       throw new HttpException({ status: 400, message: 'variant_id is required' }, 400);
     }
+    if (!product_id) {
+      throw new HttpException({ status: 400, message: 'product_id is required to validate stock' }, 400);
+    }
 
     try {
-      return await this.medusaService.addToCart(token, variant_id, quantity ?? 1, cart_id);
+      return await this.medusaService.addToCart(token, variant_id, quantity ?? 1, cart_id, product_id);
     } catch (err: any) {
       const message =
         err?.response?.data?.message ||
@@ -356,6 +383,7 @@ export class MedusaController {
 
     const { option_id, cart_id } = req.body ?? {};
     if (!option_id) throw new HttpException({ status: 400, message: 'option_id is required' }, 400);
+    if (!cart_id) throw new HttpException({ status: 400, message: 'cart_id is required' }, 400);
 
     try {
       return await this.medusaService.addShippingMethodToCart(token, option_id, cart_id);
