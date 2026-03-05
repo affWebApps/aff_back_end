@@ -16,13 +16,11 @@ export class MedusaController {
     @Query('type_id') typeId?: string,
     @Query('collection_id') collectionId?: string,
     @Query('sales_channel_id') salesChannelId?: string,
-    @Headers('x-publishable-api-key') publishableKey?: string,
   ) {
     try {
       return await this.medusaService.listProducts({
         page: Number(page) || 1,
         limit: Number(limit) || 20,
-        publishableKey,
         typeId,
         collectionId,
         salesChannelId,
@@ -50,7 +48,6 @@ export class MedusaController {
     @Query('type_id') typeId?: string,
     @Query('collection_id') collectionId?: string,
     @Query('sales_channel_id') salesChannelId?: string,
-    @Headers('x-publishable-api-key') publishableKey?: string,
   ) {
     try {
       return await this.medusaService.listProductsbyVendor({
@@ -443,6 +440,25 @@ export class MedusaController {
         err?.response?.data?.message ||
         err?.message ||
         'Failed to complete cart in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('orders')
+  @ApiOperation({ summary: 'Retrieve all orders for a customer' })
+  async getOrdersList(@Param('id') id: string) {
+    try {
+      return await this.medusaService.getOrdersList();
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to retrieve orders from Medusa';
       const status =
         err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
           ? err.response.status

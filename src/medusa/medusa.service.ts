@@ -9,7 +9,6 @@ import { StoreCart } from '@medusajs/types';
 export interface MedusaListProductsParams {
   page?: number;
   limit?: number;
-  publishableKey?: string;
   typeId?: string;
   collectionId?: string;
   salesChannelId?: string;
@@ -41,19 +40,22 @@ export class MedusaService {
     }
   }
 
-  private getStoreClient(key: string) {
+  private getStoreClient() {
+    if (!this.publishableKey) {
+      throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    }
     return (
       this.storeClient ??
       new Medusa({
         baseUrl: this.storeApi,
         debug: false,
-        publishableKey: key,
+        publishableKey: this.publishableKey,
       })
     );
   }
 
-  private async storeLogin(email: string, password: string, key: string, actor_type: string) {
-    const client = this.getStoreClient(key);
+  private async storeLogin(email: string, password: string, actor_type: string) {
+    const client = this.getStoreClient();
     // SDK login for store customers
     const token = await client.auth.login(actor_type, "emailpass", {
       email,
@@ -62,16 +64,16 @@ export class MedusaService {
     return token;
   }
 
-  private async storeRegister(email: string, password: string, key: string) {
-    const client = this.getStoreClient(key);
+  private async storeRegister(email: string, password: string) {
+    const client = this.getStoreClient();
     const token = await client.auth.register("customer", "emailpass", { email, password });
     return token
   }
 
-  private async getCart(id: string, key: string) {
-    const client = this.getStoreClient(key);
+  private async getCart(id: string) {
+    const client = this.getStoreClient();
     const cart_response = await client.store.cart.retrieve(id, {
-      fields: "items.id, items.title,items.quantity, items.product_id, items.variant_id, items.thumbnail, items.unit_price, region_id, subtotal, total, shipping_total, shipping_subtotal, shipping_methods, billing_address"
+      fields: "items.id, items.title,items.quantity, items.product_id, items.variant_id, items.variant_title, items.thumbnail, items.unit_price, region_id, subtotal, total, shipping_total, shipping_subtotal, shipping_methods, shipping_address.*, billing_address.*, customer.*"
     })
     const cart = cart_response?.cart
     const item_count = cart?.items?.reduce((sum, item) => sum + item.quantity, 0)
@@ -81,7 +83,7 @@ export class MedusaService {
     }
   }
   private async getFullCart(id: string, key: string) {
-    const client = this.getStoreClient(key);
+    const client = this.getStoreClient();
     const cart_response = await client.store.cart.retrieve(id)
     const cart = cart_response?.cart
     const item_count = cart?.items?.reduce((sum, item) => sum + item.quantity, 0)
@@ -94,17 +96,17 @@ export class MedusaService {
   async loginStoreCustomer(email: string, password: string) {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
-    return this.storeLogin(email, password, this.publishableKey, "customer");
+    return this.storeLogin(email, password, "customer");
   }
 
   async loginVendor(email: string, password: string) {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
-    return this.storeLogin(email, password, this.publishableKey, "vendor");
+    return this.storeLogin(email, password, "vendor");
   }
 
   private async storeUserCreate(customerPayload: any, key: string, token: string) {
-    const client = this.getStoreClient(key);
+    const client = this.getStoreClient();
     const { customer } = await client.store.customer.create(
       customerPayload,
       {},
@@ -128,10 +130,9 @@ export class MedusaService {
     const pageNum = Math.max(1, Number(page) || 1);
     const offset = (pageNum - 1) * take;
 
-    const key = this.publishableKey;
-    if (!key) throw new Error('Missing x-publishable-api-key and MEDUSA_PUBLISHABLE_API_KEY');
+    // if (!key) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
 
-    const client = this.getStoreClient(key);
+    const client = this.getStoreClient();
     try {
       const res = await client.store.product.list({
         limit: take,
@@ -163,7 +164,7 @@ export class MedusaService {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     const key = this.publishableKey;
     if (!key) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
-    const client = this.getStoreClient(key);
+    const client = this.getStoreClient();
     try {
       const res = await client.store.product.retrieve(productId, {
         fields: `+variants.inventory_quantity`,
@@ -203,8 +204,7 @@ export class MedusaService {
     const pageNum = Math.max(1, Number(page) || 1);
     const offset = (pageNum - 1) * take;
 
-    const key = this.publishableKey;
-    if (!key) throw new Error('Missing x-publishable-api-key and MEDUSA_PUBLISHABLE_API_KEY');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
 
     const url = `${this.storeApi}/store/products-by-vendor`;
     try {
@@ -216,7 +216,7 @@ export class MedusaService {
       const res = await firstValueFrom(
         this.http.get(url, {
           params,
-          headers: { 'x-publishable-api-key': key },
+          headers: { 'x-publishable-api-key': this.publishableKey ?? '' },
         }),
       );
       const count = res.data.count
@@ -266,13 +266,13 @@ export class MedusaService {
       let token: string | undefined;
       if (!user.vendor_id) {
         try {
-          token = await this.storeRegister(email, password, key);
+          token = await this.storeRegister(email, password);
         } catch (e) {
           this.logger.warn('Medusa register failed, attempting login', e?.response?.data ?? e?.message ?? e);
         }
       }
       if (!token) {
-        token = (await this.storeLogin(email, password, key, "customer")) as string;
+        token = (await this.storeLogin(email, password, "customer")) as string;
       }
 
       if (!token) throw new Error('Medusa auth token not returned');
@@ -335,6 +335,35 @@ export class MedusaService {
         vendor_id: user.vendor_id,
         customer_id: user.customer_id,
       };
+    }
+
+    // Attempt to fetch auth-context which may already include customer/vendor ids
+    try {
+      const contextRes = await firstValueFrom(
+        this.http.get(
+          `${this.storeApi}/store/auth-context`,
+          { headers },
+        ),
+      );
+      const resVendorId = contextRes.data?.vendor_id;
+      const resCustomerId = contextRes.data?.customer_id;
+      console.log("response from new implementation", contextRes.data)
+      if ((resVendorId || resCustomerId) && userId) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            vendor_id: resVendorId ?? undefined,
+            customer_id: resCustomerId ?? undefined,
+          },
+        });
+        return {
+          message: 'Medusa sync satisfied from auth-context',
+          vendor_id: resVendorId,
+          customer_id: resCustomerId,
+        };
+      }
+    } catch (e: any) {
+      this.logger.warn('auth-context check failed, continuing to create', e?.response?.data ?? e?.message ?? e);
     }
 
     const defaultVendorLogo =
@@ -430,7 +459,7 @@ export class MedusaService {
       throw new Error('Unable to obtain cart_id from Medusa');
     }
 
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     try {
       const productRes = await client.store.product.retrieve(productId, {
         fields: '*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory',
@@ -473,7 +502,7 @@ export class MedusaService {
       throw new Error('Unable to obtain cart_id from Medusa');
     }
 
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     try {
       const updated = await client.store.cart.deleteLineItem(resolvedCartId, itemId);
       const cart = updated.parent
@@ -505,7 +534,7 @@ export class MedusaService {
       throw new Error('Unable to obtain cart_id from Medusa');
     }
 
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     try {
       const updated = await client.store.cart.updateLineItem(resolvedCartId, itemId, {
         quantity: qty,
@@ -530,7 +559,6 @@ export class MedusaService {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
     if (!affToken) throw new Error('affToken is required');
-
     let resolvedCartId = cartId?.trim();
     if (!resolvedCartId) {
       const cart = await this.ensureCartForUser(affToken);
@@ -538,7 +566,7 @@ export class MedusaService {
     }
     if (!resolvedCartId) throw new Error('Unable to obtain cart_id from Medusa');
 
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     try {
       const updated = await client.store.cart.update(resolvedCartId, updates);
       const cart = updated.cart
@@ -566,7 +594,7 @@ export class MedusaService {
     }
     if (!resolvedCartId) throw new Error('Unable to obtain cart_id from Medusa');
 
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     try {
       const updated = await client.store.cart.addShippingMethod(resolvedCartId, {
         option_id: optionId,
@@ -596,7 +624,7 @@ export class MedusaService {
 
     let cartObj: StoreCart
     if (cartId?.trim()) {
-      const fetched = await this.getCart(cartId.trim(), this.publishableKey);
+      const fetched = await this.getCart(cartId.trim());
       cartObj = fetched.cart
     } else {
       const ensured = await this.ensureCartForUser(affToken);
@@ -604,7 +632,7 @@ export class MedusaService {
     }
     if (!cartObj?.id) throw new Error('Unable to obtain cart_id from Medusa');
 
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     const headers: Record<string, string> = { 'x-aff-token': affToken };
     if (this.publishableKey) headers['x-publishable-api-key'] = this.publishableKey;
 
@@ -642,12 +670,28 @@ export class MedusaService {
     }
     if (!resolvedCartId) throw new Error('Unable to obtain cart_id from Medusa');
 
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     try {
       const result = await client.store.cart.complete(resolvedCartId);
       return result;
     } catch (err: any) {
       this.logger.error('Medusa completeCart failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  /**
+   * Retrieve all orders
+   */
+  async getOrdersList() {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
+    const client = this.getStoreClient();
+    try {
+      const orders = await client.store.order.list()
+      return orders
+    } catch (err) {
+      this.logger.error('Medusa retrieveOrder failed', err?.response?.data ?? err?.message ?? err);
       throw err;
     }
   }
@@ -659,7 +703,7 @@ export class MedusaService {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
     if (!orderId) throw new Error('orderId is required');
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     try {
       const res = await client.store.order.retrieve(orderId);
       return res;
@@ -697,7 +741,7 @@ export class MedusaService {
   async listPaymentProviders(regionId?: string) {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     try {
       return await client.store.payment.listPaymentProviders(
         regionId ? { region_id: regionId } : undefined,
@@ -715,7 +759,7 @@ export class MedusaService {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
     if (!cartId) throw new Error('cart_id is required');
-    const client = this.getStoreClient(this.publishableKey);
+    const client = this.getStoreClient();
     try {
       return await client.store.fulfillment.listCartOptions({ cart_id: cartId });
     } catch (err: any) {
@@ -742,7 +786,7 @@ export class MedusaService {
         this.http.get(`${this.storeApi}/store/cart`, { headers }),
       );
       const cartId = res.data?.cart?.id || res.data?.cart_id || res.data?.id;
-      const cart = await this.getCart(cartId, this.publishableKey)
+      const cart = await this.getCart(cartId)
 
       return cart;
     } catch (err: any) {
@@ -779,7 +823,6 @@ export class MedusaService {
     const vendorsUrl = `${this.storeApi}/vendors`;
     const password = user.email; // per requirement
     const email = user.email;
-    const key = this.publishableKey
 
     let token: string | undefined;
     if (!user.customer_id) {
@@ -797,7 +840,7 @@ export class MedusaService {
       }
     }
     if (!token) {
-      token = (await this.storeLogin(email, password, key, "vendor")) as string;
+      token = (await this.storeLogin(email, password, "vendor")) as string;
     }
 
     if (!token) throw new Error('Medusa auth token not returned');
