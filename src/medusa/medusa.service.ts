@@ -227,6 +227,8 @@ export class MedusaService {
           thumbnail: product.thumbnail,
           title: product.title,
           price: product.variants[0]?.prices[0]?.amount,
+          status: product.status,
+          created_at: product.created_at
         }
       })
       return { products, pagination };
