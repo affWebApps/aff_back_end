@@ -356,7 +356,6 @@ export class AuthService {
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
-    console.log("dto is .....", dto)
     const user = await this.usersService.findPasswordById(userId);
     if (!user) {
       throw new BadRequestException('User not found');
