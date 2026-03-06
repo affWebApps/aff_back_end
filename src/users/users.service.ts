@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthProvider, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { tr } from '@faker-js/faker/.';
 
 @Injectable()
 export class UsersService {
@@ -52,6 +53,7 @@ export class UsersService {
         role: true,
         is_active: true,
         is_verified: true,
+        auth_provider: true,
         reviews_received: true,
         portfolios: {
           include: {
@@ -64,6 +66,17 @@ export class UsersService {
         updated_at: true,
         customer_id: true,
         vendor_id: true,
+      },
+    }) as unknown as User | null;
+  }
+
+  async findPasswordById(id: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        password_hash: true,
+        auth_provider: true
       },
     }) as unknown as User | null;
   }

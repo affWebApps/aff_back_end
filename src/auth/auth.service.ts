@@ -356,7 +356,8 @@ export class AuthService {
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
-    const user = await this.usersService.findById(userId);
+    console.log("dto is .....", dto)
+    const user = await this.usersService.findPasswordById(userId);
     if (!user) {
       throw new BadRequestException('User not found');
     }
@@ -379,6 +380,6 @@ export class AuthService {
       data: { password_hash: newHash },
     });
 
-    return { status: 'password_changed' };
+    return { message: 'password_changed' };
   }
 }
