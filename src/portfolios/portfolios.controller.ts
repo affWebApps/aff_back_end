@@ -38,6 +38,6 @@ export class PortfoliosController {
   @Delete(':portfolioId')
   @ApiOperation({ summary: 'Delete a portfolio for current user' })
   async delete(@Param('portfolioId') portfolioId: string, @Req() req: Request) {
-    return this.portfoliosService.deleteForUser((req.user as any).id, portfolioId);
+    return this.portfoliosService.deletePortfolioForUser((req.user as any).id, portfolioId);
   }
 }

@@ -89,7 +89,7 @@ export class PortfoliosService {
     return images;
   }
 
-  async deleteForUser(userId: string, portfolioId: string) {
+  async deletePortfolioForUser(userId: string, portfolioId: string) {
     const existing = await this.prisma.portfolio.findFirst({ where: { id: portfolioId, user_id: userId } });
     if (!existing) {
       throw new NotFoundException('Portfolio not found');
