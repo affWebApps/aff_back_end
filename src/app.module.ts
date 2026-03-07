@@ -16,6 +16,7 @@ import { AdminModule } from './admin/admin.module';
 import { VendureModule } from './vendure/vendure.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MedusaModule } from './medusa/medusa.module';
+import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { MedusaModule } from './medusa/medusa.module';
     MarketplaceModule,
     MedusaModule,
     VendureModule,
+    PlatformSettingsModule,
     UsersModule,
   ],
   controllers: [AppController, HealthController],
