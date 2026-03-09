@@ -1,6 +1,9 @@
-# Use a slim image to avoid alpine/openssl issues with Prisma binaries
+# Use a slim image with OpenSSL available for Prisma
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
+
+# System deps needed by Prisma (OpenSSL)
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Install deps first for better caching
 COPY package*.json prisma ./ 
