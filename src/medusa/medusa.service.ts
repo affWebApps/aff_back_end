@@ -321,6 +321,8 @@ export class MedusaService {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
 
+    this.logger.log(`Medusa sync start`, { userId });
+
     const headers = {
       'x-publishable-api-key': this.publishableKey,
       'x-aff-token': affToken,
@@ -332,6 +334,7 @@ export class MedusaService {
 
     // Skip if already synced to avoid extra upstream calls
     if (user.vendor_id && user.customer_id) {
+      this.logger.log(`Medusa sync skipped (ids present)`, { userId, vendor_id: user.vendor_id, customer_id: user.customer_id });
       return {
         message: 'Medusa sync skipped; IDs already present',
         vendor_id: user.vendor_id,
@@ -349,7 +352,7 @@ export class MedusaService {
       );
       const resVendorId = contextRes.data?.vendor_id;
       const resCustomerId = contextRes.data?.customer_id;
-      console.log("response from new implementation", contextRes.data)
+      this.logger.log(`Medusa auth-context response`, { userId, resVendorId, resCustomerId });
       if ((resVendorId || resCustomerId) && userId) {
         await this.prisma.user.update({
           where: { id: userId },
@@ -387,6 +390,7 @@ export class MedusaService {
       await firstValueFrom(
         this.http.post(`${this.storeApi}/auth/user/my-auth`, {}, { headers }),
       );
+      this.logger.log('Medusa my-auth success', { userId });
 
       // Create vendor (and customer) via combined endpoint with payload
       const vendorRes = await firstValueFrom(
@@ -406,6 +410,7 @@ export class MedusaService {
         });
       }
 
+      this.logger.log('Medusa vendor/customer created', { userId, vendorAdminId, customerId });
       return vendorRes.data;
     } catch (err: any) {
       this.logger.error('Medusa syncVendorAndCustomerWithAffToken failed', err?.response?.data ?? err?.message ?? err);
