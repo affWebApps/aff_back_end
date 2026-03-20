@@ -449,6 +449,34 @@ export class MedusaController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('cart/complete-from-reference')
+  @ApiOperation({ summary: 'Resolve cart by Paystack reference and complete it' })
+  async completeCartFromReference(@Req() req: any) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+
+    const { reference } = req.body ?? {};
+    if (!reference) {
+      throw new HttpException({ status: 400, message: 'reference is required' }, 400);
+    }
+
+    try {
+      return await this.medusaService.completeCartFromPaystackReference(reference, token);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to resolve cart from reference and complete it';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('orders')
   @ApiOperation({ summary: 'Retrieve all orders for a customer' })
   async getOrdersList(@Param('id') id: string) {

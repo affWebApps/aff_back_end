@@ -742,6 +742,52 @@ export class MedusaService {
     }
   }
 
+  async completeCartFromPaystackReference(reference: string, affToken: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!reference) throw new Error('reference is required');
+    if (!affToken) throw new Error('affToken is required');
+
+    const headers: Record<string, string> = {
+      'x-aff-token': affToken,
+    };
+    if (this.publishableKey) {
+      headers['x-publishable-api-key'] = this.publishableKey;
+    }
+
+    try {
+      const res = await firstValueFrom(
+        this.http.get(`${this.storeApi}/store/paystack-cart`, {
+          params: { reference },
+          headers,
+        }),
+      );
+
+      const cartId =
+        res.data?.cart_id ??
+        res.data?.cart?.id ??
+        res.data?.data?.cart_id ??
+        res.data?.data?.cart?.id;
+
+      if (!cartId) {
+        throw new Error('cart_id was not returned from paystack-cart');
+      }
+
+      const completion = await this.completeCart(affToken, cartId);
+
+      return {
+        reference,
+        cart_id: cartId,
+        completion,
+      };
+    } catch (err: any) {
+      this.logger.error(
+        'Medusa completeCartFromPaystackReference failed',
+        err?.response?.data ?? err?.message ?? err,
+      );
+      throw err;
+    }
+  }
+
   /**
    * List available payment providers (optionally filtered by region).
    */
