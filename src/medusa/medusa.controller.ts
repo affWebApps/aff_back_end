@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, Query, HttpException, Param, Post, UseGuards, Req } from '@nestjs/common';
+import { Controller, Delete, Get, Headers, Query, HttpException, Param, Post, UseGuards, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MedusaService, MedusaListProductsParams } from './medusa.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -241,6 +241,60 @@ export class MedusaController {
         err?.response?.data?.message ||
         err?.message ||
         'Failed to create vendor products in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('vendors/products/:product_id/update')
+  @ApiOperation({ summary: 'Update a vendor product via Medusa' })
+  async updateVendorProduct(@Req() req: any, @Param('product_id') productId: string) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
+    if (!productId) {
+      throw new HttpException({ status: 400, message: 'product_id is required' }, 400);
+    }
+    try {
+      return await this.medusaService.updateVendorProduct(token, productId, req.body);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to update vendor product in Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('vendors/products/:product_id')
+  @ApiOperation({ summary: 'Delete a vendor product via Medusa' })
+  async deleteVendorProduct(@Req() req: any, @Param('product_id') productId: string) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
+    if (!productId) {
+      throw new HttpException({ status: 400, message: 'product_id is required' }, 400);
+    }
+    try {
+      return await this.medusaService.deleteVendorProduct(token, productId);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to delete vendor product in Medusa';
       const status =
         err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
           ? err.response.status

@@ -441,6 +441,48 @@ export class MedusaService {
     }
   }
 
+  async updateVendorProduct(affToken: string, productId: string, payload: any) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!affToken) throw new Error('affToken is required');
+    if (!productId) throw new Error('product_id is required');
+
+    const headers = {
+      'x-aff-token': affToken,
+      ...(this.publishableKey ? { 'x-publishable-api-key': this.publishableKey } : {}),
+    };
+
+    try {
+      const res = await firstValueFrom(
+        this.http.post(`${this.storeApi}/vendors/products/${productId}`, payload, { headers }),
+      );
+      return res.data;
+    } catch (err: any) {
+      this.logger.error('Medusa updateVendorProduct failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
+  async deleteVendorProduct(affToken: string, productId: string) {
+    if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
+    if (!affToken) throw new Error('affToken is required');
+    if (!productId) throw new Error('product_id is required');
+
+    const headers = {
+      'x-aff-token': affToken,
+      ...(this.publishableKey ? { 'x-publishable-api-key': this.publishableKey } : {}),
+    };
+
+    try {
+      const res = await firstValueFrom(
+        this.http.delete(`${this.storeApi}/vendors/products/${productId}`, { headers }),
+      );
+      return res.data;
+    } catch (err: any) {
+      this.logger.error('Medusa deleteVendorProduct failed', err?.response?.data ?? err?.message ?? err);
+      throw err;
+    }
+  }
+
   /**
    * Add a line item to the current user's cart, creating/retrieving the cart first.
    */
