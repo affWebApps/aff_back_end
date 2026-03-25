@@ -206,7 +206,6 @@ export class MedusaController {
   async syncVendorAndCustomer(@Req() req: any) {
     const authHeader: string | undefined = req.headers?.authorization;
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
-    console.log(token)
     if (!token) {
       throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
     }

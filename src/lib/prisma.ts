@@ -13,9 +13,6 @@ else {
     connectionString = process.env.PRODUCTION_DATABASE_URL
 }
 
-// console.log('connect in prisma.ts is', connectionString)
-
-
 const adapter = new PrismaPg({ connectionString });
 const prismaOptions = { adapter };
 const prisma = new PrismaClient(prismaOptions);
