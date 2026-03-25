@@ -732,15 +732,39 @@ export class MedusaService {
   /**
    * Retrieve all orders
    */
-  async getOrdersList() {
+  async getOrdersList(affToken: string, page = 1, limit = 10) {
     if (!this.storeApi) throw new Error('MEDUSA_STORE_API is not configured');
     if (!this.publishableKey) throw new Error('Missing MEDUSA_PUBLISHABLE_API_KEY');
-    const client = this.getStoreClient();
+    if (!affToken) throw new Error('affToken is required');
+
+    const safeLimit = Math.max(1, Math.min(100, Number(limit) || 10));
+    const safePage = Math.max(1, Number(page) || 1);
+    const offset = (safePage - 1) * safeLimit;
+
+    const headers: Record<string, string> = {
+      'x-aff-token': affToken,
+      'x-publishable-api-key': this.publishableKey,
+    };
+
     try {
-      const orders = await client.store.order.list()
-      return orders
-    } catch (err) {
-      this.logger.error('Medusa retrieveOrder failed', err?.response?.data ?? err?.message ?? err);
+      const res = await firstValueFrom(
+        this.http.get(`${this.storeApi}/store/orders-by-email`, {
+          params: {
+            offset,
+            limit: safeLimit,
+          },
+          headers,
+        }),
+      );
+      const { take, skip, ...rest } = res.data ?? {};
+      return {
+        ...rest,
+        page: safePage,
+        limit: safeLimit,
+        offset,
+      };
+    } catch (err: any) {
+      this.logger.error('Medusa getOrdersList failed', err?.response?.data ?? err?.message ?? err);
       throw err;
     }
   }

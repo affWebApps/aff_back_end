@@ -533,9 +533,22 @@ export class MedusaController {
   @UseGuards(JwtAuthGuard)
   @Get('orders')
   @ApiOperation({ summary: 'Retrieve all orders for a customer' })
-  async getOrdersList(@Param('id') id: string) {
+  async getOrdersList(
+    @Req() req: any,
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+  ) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
     try {
-      return await this.medusaService.getOrdersList();
+      return await this.medusaService.getOrdersList(
+        token,
+        Number(page) || 1,
+        Number(limit) || 10,
+      );
     } catch (err: any) {
       const message =
         err?.response?.data?.message ||
