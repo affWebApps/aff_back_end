@@ -562,6 +562,38 @@ export class MedusaController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('order-transactions')
+  @ApiOperation({ summary: 'Retrieve paginated order transactions for the authenticated user' })
+  async getOrderTransactionsList(
+    @Req() req: any,
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+  ) {
+    const authHeader: string | undefined = req.headers?.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    if (!token) {
+      throw new HttpException({ status: 400, message: 'Missing Bearer token' }, 400);
+    }
+    try {
+      return await this.medusaService.getOrderTransactionsList(
+        token,
+        Number(page) || 1,
+        Number(limit) || 10,
+      );
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to retrieve order transactions from Medusa';
+      const status =
+        err?.response?.status && Number(err.response.status) >= 400 && Number(err.response.status) < 500
+          ? err.response.status
+          : 502;
+      throw new HttpException({ status, message }, status);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('orders/:id')
   @ApiOperation({ summary: 'Retrieve order by id' })
   async getOrder(@Param('id') id: string) {
