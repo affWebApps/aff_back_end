@@ -6,7 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://aff-front-end.vercel.app', "https://main.d1kaywbyfteev3.amplifyapp.com",], // add other FE origins as needed
+    origin: ['http://localhost:3000', 'https://aff-front-end.vercel.app', "https://main.d1kaywbyfteev3.amplifyapp.com", "https://afriquefashionfusion.com"], // add other FE origins as needed
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: '*',
