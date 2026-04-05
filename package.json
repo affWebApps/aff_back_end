@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1019.0",
     "@aws-sdk/client-sesv2": "^3.1019.0",
     "@faker-js/faker": "^10.1.0",
     "@medusajs/js-sdk": "^2.13.1",
