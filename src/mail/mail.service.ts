@@ -5,12 +5,14 @@ import * as path from 'path';
 import * as handlebars from 'handlebars';
 import * as nodemailer from 'nodemailer';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
+import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private transporter?: nodemailer.Transporter;
   private sesClient?: SESv2Client;
+  private resendClient?: Resend;
   private readonly provider: string;
   private templatesDir = path.join(
     process.cwd(),
@@ -43,6 +45,19 @@ export class MailService {
       });
 
       this.logger.log(`Mail transporter initialized with SES (${region})`);
+      return;
+    }
+
+    if (this.provider === 'resend') {
+      const apiKey = this.config.get<string>('RESEND_API_KEY');
+      if (!apiKey) {
+        throw new Error(
+          'RESEND_API_KEY is required when MAIL_PROVIDER=resend. Replace re_xxxxxxxxx with your real API key.',
+        );
+      }
+
+      this.resendClient = new Resend(apiKey);
+      this.logger.log(`Mail transporter initialized with Resend`);
       return;
     }
 
@@ -97,6 +112,23 @@ export class MailService {
 
       return {
         messageId: sent.MessageId,
+      };
+    }
+
+    if (this.provider === 'resend') {
+      if (!this.resendClient) {
+        throw new Error('Resend client is not initialized');
+      }
+
+      const sent = await this.resendClient.emails.send({
+        from,
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+      });
+
+      return {
+        messageId: sent.data?.id,
       };
     }
 
