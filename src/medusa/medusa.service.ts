@@ -269,7 +269,7 @@ export class MedusaService {
       if (!user.vendor_id) {
         try {
           token = await this.storeRegister(email, password);
-        } catch (e) {
+        } catch (e: any) {
           this.logger.warn('Medusa register failed, attempting login', e?.response?.data ?? e?.message ?? e);
         }
       }
@@ -990,8 +990,8 @@ export class MedusaService {
         const registerRes = await firstValueFrom(this.http.post(registerUrl, registerPayload, {
           headers: { 'x-publishable-api-key': this.publishableKey ?? '' },
         }));
-        const token = registerRes.data?.token || registerRes.data?.access_token;
-      } catch (e) {
+        token = registerRes.data?.token || registerRes.data?.access_token;
+      } catch (e: any) {
         this.logger.warn('Medusa register failed, attempting login', e?.response?.data ?? e?.message ?? e);
       }
     }
