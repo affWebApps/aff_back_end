@@ -1,4 +1,4 @@
-import { Body, Controller, HttpException, Post, Req } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpException, Post, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MailService } from './mail.service';
 
@@ -8,6 +8,7 @@ export class MailController {
   constructor(private readonly mailService: MailService) {}
 
   @Post('test')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Send a test email using the configured mail provider' })
   async sendTestEmail(@Req() req: any, @Body() body: { to?: string }) {
     const to = body?.to ?? req.user?.email;

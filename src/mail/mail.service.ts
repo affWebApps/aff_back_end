@@ -112,6 +112,7 @@ export class MailService {
 
       return {
         messageId: sent.MessageId,
+        raw: sent,
       };
     }
 
@@ -129,6 +130,7 @@ export class MailService {
 
       return {
         messageId: sent.data?.id,
+        raw: sent,
       };
     }
 
@@ -136,12 +138,17 @@ export class MailService {
       throw new Error('SMTP transporter is not initialized');
     }
 
-    return this.transporter.sendMail({
+    const sent = await this.transporter.sendMail({
       from,
       to: params.to,
       subject: params.subject,
       html: params.html,
     });
+
+    return {
+      messageId: sent?.messageId,
+      raw: sent,
+    };
   }
 
   async sendTemplate(options: {
@@ -191,7 +198,8 @@ export class MailService {
         `,
       });
 
-      this.logger.debug(`Test mail sent`, {
+      this.logger.log(`Test mail sent`, {
+        sent,
         to,
         messageId: sent?.messageId,
         provider: this.provider,
@@ -202,6 +210,7 @@ export class MailService {
         to,
         messageId: sent?.messageId,
         provider: this.provider,
+        result: sent?.raw ?? sent,
       };
     } catch (error: any) {
       this.logger.error('Test mail send failed', error?.stack ?? error?.message ?? error);
