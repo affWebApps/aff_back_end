@@ -7,6 +7,7 @@ import { UsersService } from '../../users/users.service';
 interface JwtPayload {
   sub: string;
   email: string;
+  iat: number;
 }
 
 @Injectable()
@@ -27,6 +28,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user) {
       throw new UnauthorizedException();
     }
+
+    const lastLogoutAt = (user as { last_logout_at?: Date | null }).last_logout_at;
+
+    if (lastLogoutAt) {
+      const tokenIssuedAt = new Date(payload.iat * 1000);
+      if (tokenIssuedAt < lastLogoutAt) {
+        throw new UnauthorizedException('Token has been invalidated');
+      }
+    }
+
     const { password_hash, ...safeUser } = user;
     return safeUser;
   }

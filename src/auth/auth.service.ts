@@ -71,8 +71,12 @@ export class AuthService {
     return { access_token };
   }
 
-  async logout() {
-    return { message: "Logged out" }
+  async logout(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { last_logout_at: new Date() },
+    });
+    return { message: 'Logged out' };
   }
 
   async register(dto: RegisterDto) {
@@ -193,7 +197,7 @@ export class AuthService {
         throw new BadRequestException('Invalid code');
       }
       return this.login({ id: user.id, email: user.email });
-    } catch (error) {
+    } catch (error: any) {
       this.logger.warn('OAuth code exchange failed', { message: error?.message });
       throw new BadRequestException('Invalid or expired code');
     }
@@ -236,7 +240,7 @@ export class AuthService {
         email,
         template: 'verify-email',
       });
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Failed to send verification email', error?.stack, {
         email,
         template: 'verify-email',
@@ -315,7 +319,7 @@ export class AuthService {
           resetUrl: `${this.configService.get<string>('FRONTEND_RESET_URL') ?? 'http://localhost:3000/reset-password'}?token=${token}`,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('Failed to send reset email', error?.stack, {
         email: user.email,
         template: 'reset-password',

@@ -52,6 +52,7 @@ export class UsersService {
         role: true,
         is_active: true,
         is_verified: true,
+        last_logout_at: true,
         auth_provider: true,
         reviews_received: true,
         portfolios: {

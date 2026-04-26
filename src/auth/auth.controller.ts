@@ -40,11 +40,13 @@ export class AuthController {
     return this.authService.login(user);
   }
 
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post('logout')
   @ApiOperation({ summary: 'Logout' })
   async logout(@Req() req: Request) {
-    return this.authService.logout();
+    const user = req.user as { id: string };
+    return this.authService.logout(user.id);
   }
 
   @Post('register')
