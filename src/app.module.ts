@@ -17,6 +17,8 @@ import { VendureModule } from './vendure/vendure.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MedusaModule } from './medusa/medusa.module';
 import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
+import { SiteContentModule } from './site-content/site-content.module';
+import { TeamMembersModule } from './team-members/team-members.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { PlatformSettingsModule } from './platform-settings/platform-settings.mo
     MedusaModule,
     VendureModule,
     PlatformSettingsModule,
+    SiteContentModule,
+    TeamMembersModule,
     UsersModule,
   ],
   controllers: [AppController, HealthController],

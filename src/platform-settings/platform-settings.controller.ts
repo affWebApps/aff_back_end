@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards, HttpException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { PlatformSettingsService } from './platform-settings.service';
 import { CreatePlatformSettingDto } from './dto/create-platform-setting.dto';
 import { UpdatePlatformSettingDto } from './dto/update-platform-setting.dto';
@@ -30,18 +31,21 @@ export class PlatformSettingsController {
   }
 
   @Post()
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Create platform setting' })
   async create(@Body() dto: CreatePlatformSettingDto, @Req() req: any) {
     return this.platformSettingsService.create(dto, req.user?.id);
   }
 
   @Patch(':id')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Update platform setting' })
   async update(@Param('id') id: string, @Body() dto: UpdatePlatformSettingDto, @Req() req: any) {
     return this.platformSettingsService.update(id, dto, req.user?.id);
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Delete platform setting' })
   async delete(@Param('id') id: string) {
     return this.platformSettingsService.delete(id);

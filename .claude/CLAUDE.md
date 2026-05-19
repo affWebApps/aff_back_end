@@ -139,6 +139,8 @@ All routes use URI versioning: `/v1/<path>`.
 | `/v1/blogs/*` | BlogsModule (public) | None |
 | `/v1/admin/*` | AdminModule | Admin role |
 | `/v1/platform-settings/*` | PlatformSettingsModule | Admin |
+| `/v1/site-content/*` | SiteContentModule | None (read) / Admin (write) |
+| `/v1/team-members/*` | TeamMembersModule | None (read) / Admin (write) |
 | `/v1/uploads-test-567/*` | UploadsModule | JWT |
 | `/v1/docs` | Swagger UI | None |
 
@@ -535,6 +537,65 @@ Bucket set by `SUPABASE_BUCKET` env var (default `aff-media`). Bucket must be **
 
 ---
 
+## Site content
+
+Stores CMS-style website copy in the DB so admins can update text without redeploying.
+
+### SiteContentService methods
+| Method | Description |
+|---|---|
+| `findAll(activeOnly?)` | All sections or only `is_active=true`, ordered by key |
+| `findByKey(key)` | Single section by unique key; throws `NotFoundException` |
+| `create(dto)` | Create a new section |
+| `update(key, dto)` | Partial update by key |
+| `delete(key)` | Delete by key |
+
+### SiteContentController endpoints (prefix `/v1/site-content`)
+
+| Method | Path | Guard | Description |
+|---|---|---|---|
+| GET | `/v1/site-content` | None | List all sections (`?active=true` for active only) |
+| GET | `/v1/site-content/:key` | None | Get section by key (e.g. `about_us`) |
+| POST | `/v1/site-content` | JWT + Admin | Create section |
+| PATCH | `/v1/site-content/:key` | JWT + Admin | Update section |
+| DELETE | `/v1/site-content/:key` | JWT + Admin | Delete section |
+
+### CreateSiteContentDto fields
+`key` (unique string, e.g. `about_us`), `title`, `body` (long text), `imageUrl?`, `isActive?` (default true)
+
+### Recommended keys
+`about_us`, `our_story`, `our_mission`, `our_vision` (or any string the frontend agrees on)
+
+---
+
+## Team members
+
+Stores team member profiles (name, role, bio, photo) for display on the website.
+
+### TeamMembersService methods
+| Method | Description |
+|---|---|
+| `findAll(activeOnly?)` | All members ordered by `display_order` ASC then `created_at` ASC |
+| `findOne(id)` | Single member by id; throws `NotFoundException` |
+| `create(dto)` | Add team member |
+| `update(id, dto)` | Partial update |
+| `delete(id)` | Remove member |
+
+### TeamMembersController endpoints (prefix `/v1/team-members`)
+
+| Method | Path | Guard | Description |
+|---|---|---|---|
+| GET | `/v1/team-members` | None | List all members (`?active=true` for active only) |
+| GET | `/v1/team-members/:id` | None | Get single member |
+| POST | `/v1/team-members` | JWT + Admin | Add member |
+| PATCH | `/v1/team-members/:id` | JWT + Admin | Update member |
+| DELETE | `/v1/team-members/:id` | JWT + Admin | Remove member |
+
+### CreateTeamMemberDto fields
+`name`, `role`, `bio?`, `photoUrl?`, `displayOrder?` (Int, default 0 — lower numbers appear first), `isActive?` (default true)
+
+---
+
 ## Platform settings
 
 Key-value store for runtime platform configuration (no code changes required).
@@ -731,6 +792,18 @@ id, title, content?, image_url?, status, sent_at?, created_at, updated_at
 Permission: id, user_id (FK→User), permission_key (FK→PermissionDefinition.key), value (Boolean), created_at, updated_at
 PermissionDefinition: id, key (unique), description?, applies_to, permissions (Permission[])
 ```
+
+**SiteContent** — website CMS sections
+```
+id (UUID), key (unique), title, body (Text), image_url?, is_active (default true), created_at, updated_at
+```
+Example keys: `about_us`, `our_story`, `our_mission`, `our_vision`
+
+**TeamMember** — team profiles for website display
+```
+id (UUID), name, role, bio? (Text), photo_url?, display_order (Int, default 0), is_active (default true), created_at, updated_at
+```
+Ordered by `display_order ASC, created_at ASC`
 
 **Role** + **UserRole** — RBAC (currently not enforced via middleware, future use)
 ```
