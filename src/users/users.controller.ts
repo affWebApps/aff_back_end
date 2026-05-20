@@ -38,7 +38,6 @@ export class UsersController {
     return this.usersService.buildProfile(updated);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('stats')
   @ApiOperation({ summary: 'Get total user counts by role (admin)' })
   async getUserStats() {
