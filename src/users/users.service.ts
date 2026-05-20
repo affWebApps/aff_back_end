@@ -88,16 +88,23 @@ export class UsersService {
         email: true,
         role: true,
         first_name: true,
+        avatar_url: true,
         last_name: true,
         is_verified: true,
         auth_provider: true,
         created_at: true,
-        portfolios: {
-          include: { Image: true },
-        },
       },
       orderBy: { created_at: 'desc' },
     });
+  }
+
+  async getUserStats() {
+    const [total, designers, tailors] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { role: { equals: 'designer', mode: 'insensitive' } } }),
+      this.prisma.user.count({ where: { role: { equals: 'tailor', mode: 'insensitive' } } }),
+    ]);
+    return { total, designers, tailors };
   }
 
   async updateUser(
