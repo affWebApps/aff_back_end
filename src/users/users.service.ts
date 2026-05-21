@@ -98,6 +98,14 @@ export class UsersService {
     });
   }
 
+  async setActiveStatus(id: string, isActive: boolean) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { is_active: isActive },
+      select: { id: true, email: true, is_active: true },
+    });
+  }
+
   async getUserStats() {
     const [total, designers, tailors] = await Promise.all([
       this.prisma.user.count(),

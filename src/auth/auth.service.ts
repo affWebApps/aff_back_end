@@ -50,6 +50,14 @@ export class AuthService {
       throw new UnauthorizedException('Email not verified');
     }
 
+    if (!user.is_active) {
+      this.logger.warn('Login blocked: user account is deactivated', {
+        email: user.email,
+        userId: user.id,
+      });
+      throw new UnauthorizedException('Account has been deactivated');
+    }
+
     const { password_hash, ...safeUser } = user;
     return safeUser;
   }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Req, UseGuards, Param, HttpException } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req, UseGuards, Param, HttpException, ParseBoolPipe } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -42,6 +42,16 @@ export class UsersController {
   @ApiOperation({ summary: 'Get total user counts by role (admin)' })
   async getUserStats() {
     return this.usersService.getUserStats();
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Activate or deactivate a user (admin)' })
+  async setActiveStatus(
+    @Param('id') id: string,
+    @Body('isActive', ParseBoolPipe) isActive: boolean,
+  ) {
+    return this.usersService.setActiveStatus(id, isActive);
   }
 
   @UseGuards(JwtAuthGuard)
