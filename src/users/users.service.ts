@@ -81,21 +81,63 @@ export class UsersService {
     }) as unknown as User | null;
   }
 
-  async findAllMinimal(): Promise<Partial<User>[]> {
-    return this.prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        first_name: true,
-        avatar_url: true,
-        last_name: true,
-        is_verified: true,
-        auth_provider: true,
-        created_at: true,
-      },
-      orderBy: { created_at: 'desc' },
-    });
+  private readonly SORTABLE_FIELDS = new Set([
+    'first_name', 'last_name', 'display_name', 'email', 'created_at',
+  ]);
+
+  async findAllMinimal(
+    page = 1,
+    limit = 20,
+    sortBy = 'created_at',
+    sortOrder: 'asc' | 'desc' = 'desc',
+    filters: {
+      role?: string;
+      isVerified?: boolean;
+      isActive?: boolean;
+      authProvider?: string;
+    } = {},
+  ) {
+    const take = Math.max(1, Math.min(100, limit));
+    const pageNum = Math.max(1, page);
+    const skip = (pageNum - 1) * take;
+    const orderField = this.SORTABLE_FIELDS.has(sortBy) ? sortBy : 'created_at';
+
+    const where = {
+      ...(filters.role !== undefined && { role: { equals: filters.role, mode: 'insensitive' as const } }),
+      ...(filters.isVerified !== undefined && { is_verified: filters.isVerified }),
+      ...(filters.isActive !== undefined && { is_active: filters.isActive }),
+      ...(filters.authProvider !== undefined && { auth_provider: filters.authProvider as any }),
+    };
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          first_name: true,
+          avatar_url: true,
+          last_name: true,
+          is_verified: true,
+          is_active: true,
+          auth_provider: true,
+          created_at: true,
+        },
+        orderBy: { [orderField]: sortOrder },
+        skip,
+        take,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: users,
+      total,
+      page: pageNum,
+      limit: take,
+      totalPages: Math.ceil(total / take),
+    };
   }
 
   async setActiveStatus(id: string, isActive: boolean) {

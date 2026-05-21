@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Req, UseGuards, Param, HttpException, ParseBoolPipe } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req, UseGuards, Param, HttpException, ParseBoolPipe, Query } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -25,8 +25,28 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get()
   @ApiOperation({ summary: 'List users (minimal fields)' })
-  async listUsers() {
-    return this.usersService.findAllMinimal();
+  async listUsers(
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Query('sortBy') sortBy = 'created_at',
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
+    @Query('role') role?: string,
+    @Query('isVerified') isVerified?: string,
+    @Query('isActive') isActive?: string,
+    @Query('authProvider') authProvider?: string,
+  ) {
+    return this.usersService.findAllMinimal(
+      Number(page),
+      Number(limit),
+      sortBy,
+      sortOrder,
+      {
+        role,
+        isVerified: isVerified !== undefined ? isVerified === 'true' : undefined,
+        isActive: isActive !== undefined ? isActive === 'true' : undefined,
+        authProvider,
+      },
+    );
   }
 
   @UseGuards(JwtAuthGuard)
