@@ -143,7 +143,10 @@ export class UsersService {
   async setActiveStatus(id: string, isActive: boolean) {
     return this.prisma.user.update({
       where: { id },
-      data: { is_active: isActive },
+      data: {
+        is_active: isActive,
+        ...(isActive === false && { last_logout_at: new Date() }),
+      },
       select: { id: true, email: true, is_active: true },
     });
   }
