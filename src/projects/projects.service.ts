@@ -44,7 +44,8 @@ export class ProjectsService {
       where: { id },
       include: {
         files: true,
-        requirements: true
+        requirements: true,
+        bids: true,
       },
     });
     if (!project) {
