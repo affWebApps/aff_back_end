@@ -130,6 +130,10 @@ model Project {
   status           ProjectStatus @default(OPEN)
   estimated_time   String?
   deadline         DateTime?
+  is_blocked       Boolean  @default(false)
+  blocked_by       String?
+  blocked_at       DateTime?
+  block_reason     String?
   created_at       DateTime @default(now())
   updated_at       DateTime @updatedAt
 

@@ -11,6 +11,43 @@ import { CreateBidDto } from './dto/create-bid.dto';
 export class ProjectsService {
   constructor(private readonly prisma: PrismaService) { }
 
+  async blockProject(projectId: string, adminId: string, reason: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) throw new NotFoundException('Project not found');
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: {
+        is_blocked: true,
+        blocked_by: adminId,
+        blocked_at: new Date(),
+        block_reason: reason,
+      },
+    });
+  }
+
+  async unblockProject(projectId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) throw new NotFoundException('Project not found');
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: {
+        is_blocked: false,
+        blocked_by: null,
+        blocked_at: null,
+        block_reason: null,
+      },
+    });
+  }
+
+  async getStats() {
+    const [total, inProgress, completed] = await Promise.all([
+      this.prisma.project.count(),
+      this.prisma.project.count({ where: { status: ProjectStatus.IN_PROGRESS } }),
+      this.prisma.project.count({ where: { status: ProjectStatus.COMPLETED } }),
+    ]);
+    return { total, inProgress, completed };
+  }
+
   async create(designerId: string, dto: CreateProjectDto) {
     return this.prisma.project.create({
       data: {

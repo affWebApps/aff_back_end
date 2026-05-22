@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards, BadRequestException } from '@nestjs/common';
 import { ProjectStatus } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectsService } from './projects.service';
@@ -16,6 +17,31 @@ import { CreateBidDto } from './dto/create-bid.dto';
 @Controller({ path: 'projects', version: '1' })
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) { }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Get project counts by status' })
+  async getStats() {
+    return this.projectsService.getStats();
+  }
+
+  @UseGuards(AdminGuard)
+  @Patch(':id/block')
+  @ApiOperation({ summary: 'Block a project (admin)' })
+  async blockProject(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { id: string } },
+    @Body('reason') reason: string,
+  ) {
+    if (!reason?.trim()) throw new BadRequestException('Block reason is required');
+    return this.projectsService.blockProject(id, req.user.id, reason);
+  }
+
+  @UseGuards(AdminGuard)
+  @Patch(':id/unblock')
+  @ApiOperation({ summary: 'Unblock a project (admin)' })
+  async unblockProject(@Param('id') id: string) {
+    return this.projectsService.unblockProject(id);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a project (one owner)' })
