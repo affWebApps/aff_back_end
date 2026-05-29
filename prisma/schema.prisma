@@ -48,6 +48,8 @@ model User {
   auth_sessions            AuthSession[]
   messages_sent            Message[]   @relation("SentMessages")
   messages_received        Message[]   @relation("ReceivedMessages")
+  chats_as_user1           Chat[]      @relation("ChatUser1")
+  chats_as_user2           Chat[]      @relation("ChatUser2")
   orders_buyer             Order[]     @relation("BuyerOrders")
   orders_seller            Order[]     @relation("SellerOrders")
   escrows_buyer            Escrow[]    @relation("BuyerEscrows")
@@ -273,8 +275,15 @@ model Message {
 
 model Chat {
   id          String     @id @default(uuid())
+  user1_id    String
+  user2_id    String
+  created_at  DateTime   @default(now())
+
+  user1       User       @relation("ChatUser1", fields: [user1_id], references: [id])
+  user2       User       @relation("ChatUser2", fields: [user2_id], references: [id])
   messages    Message[]
 
+  @@unique([user1_id, user2_id])
   @@map("chats")
 }
 

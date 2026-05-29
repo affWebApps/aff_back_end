@@ -18,6 +18,7 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MedusaModule } from './medusa/medusa.module';
 import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
 import { SiteContentModule } from './site-content/site-content.module';
+import { MessagesModule } from './messages/messages.module';
 import { TeamMembersModule } from './team-members/team-members.module';
 
 @Module({
@@ -37,6 +38,7 @@ import { TeamMembersModule } from './team-members/team-members.module';
     VendureModule,
     PlatformSettingsModule,
     SiteContentModule,
+    MessagesModule,
     TeamMembersModule,
     UsersModule,
   ],
