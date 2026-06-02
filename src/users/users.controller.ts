@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Req, UseGuards, Param, HttpException, ParseBoolPipe, Query } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req, UseGuards, Param, ParseBoolPipe, Query } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -18,7 +18,7 @@ export class UsersController {
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@Req() request: Request) {
-    const profile = await this.usersService.buildProfile(request.user);
+    const profile = this.usersService.buildProfile(request.user);
     return profile;
   }
 
@@ -62,6 +62,17 @@ export class UsersController {
   @ApiOperation({ summary: 'Get total user counts by role (admin)' })
   async getUserStats() {
     return this.usersService.getUserStats();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('search')
+  @ApiOperation({ summary: 'Search users by name' })
+  searchUsers(
+    @Query('q') q = '',
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.usersService.searchUsers(q, Number(page), Number(limit));
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthProvider, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -35,8 +35,8 @@ export class UsersService {
     });
   }
 
-  async findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+  async findById(id: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -68,6 +68,9 @@ export class UsersService {
         vendor_id: true,
       },
     }) as unknown as User | null;
+
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
   async findPasswordById(id: string): Promise<User | null> {
@@ -127,6 +130,51 @@ export class UsersService {
         orderBy: { [orderField]: sortOrder },
         skip,
         take,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: users,
+      total,
+      page: pageNum,
+      limit: take,
+      totalPages: Math.ceil(total / take),
+    };
+  }
+
+  async searchUsers(q: string, page = 1, limit = 20) {
+    const terms = q.trim().split(/\s+/).filter(Boolean);
+    const take = Math.max(1, Math.min(100, limit));
+    const pageNum = Math.max(1, page);
+    const skip = (pageNum - 1) * take;
+
+    const where = terms.length
+      ? {
+          AND: terms.map((term) => ({
+            OR: [
+              { first_name: { contains: term, mode: 'insensitive' as const } },
+              { last_name: { contains: term, mode: 'insensitive' as const } },
+              { display_name: { contains: term, mode: 'insensitive' as const } },
+            ],
+          })),
+        }
+      : {};
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          display_name: true,
+          avatar_url: true,
+          role: true,
+        },
+        skip,
+        take,
+        orderBy: { first_name: 'asc' },
       }),
       this.prisma.user.count({ where }),
     ]);
