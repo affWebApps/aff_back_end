@@ -224,24 +224,24 @@ GET /v1/search?q= – users, projects, products, designs (facets).
 
 ## Website Content & CMS
 
-GET /v1/site-content – list all content sections (add ?active=true to filter active only). ⬜
+GET /v1/site-content – list all content sections (add ?active=true to filter active only). ✅
 
-GET /v1/site-content/:key – get a single section by key (e.g. about_us, our_story, our_mission, our_vision). ⬜
+GET /v1/site-content/:key – get a single section by key (e.g. about_us, our_story, our_mission, our_vision). ✅
 
-POST /v1/site-content – admin only; create a content section { key, title, body, imageUrl? }. ⬜
+POST /v1/site-content – admin only; create a content section { key, title, body, imageUrl? }. ✅
 
-PATCH /v1/site-content/:key – admin only; update a content section. ⬜
+PATCH /v1/site-content/:key – admin only; update a content section. ✅
 
-DELETE /v1/site-content/:key – admin only; delete a content section. ⬜
+DELETE /v1/site-content/:key – admin only; delete a content section. ✅
 
 ## Team Members
 
-GET /v1/team-members – list all team members ordered by displayOrder (add ?active=true to filter active only). ⬜
+GET /v1/team-members – list all team members ordered by displayOrder (add ?active=true to filter active only). ✅
 
-GET /v1/team-members/:id – get a single team member. ⬜
+GET /v1/team-members/:id – get a single team member. ✅
 
-POST /v1/team-members – admin only; add a team member { name, role, bio?, photoUrl?, displayOrder? }. ⬜
+POST /v1/team-members – admin only; add a team member { name, role, bio?, photoUrl?, displayOrder? }. ✅
 
-PATCH /v1/team-members/:id – admin only; update a team member. ⬜
+PATCH /v1/team-members/:id – admin only; update a team member. ✅
 
-DELETE /v1/team-members/:id – admin only; remove a team member. ⬜
+DELETE /v1/team-members/:id – admin only; remove a team member. ✅
