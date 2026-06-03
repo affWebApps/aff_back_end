@@ -48,6 +48,7 @@ model User {
   auth_sessions            AuthSession[]
   messages_sent            Message[]   @relation("SentMessages")
   messages_received        Message[]   @relation("ReceivedMessages")
+  assigned_projects        Project[]   @relation("AssignedTailorProjects")
   chats_as_user1           Chat[]      @relation("ChatUser1")
   chats_as_user2           Chat[]      @relation("ChatUser2")
   orders_buyer             Order[]     @relation("BuyerOrders")
@@ -130,9 +131,10 @@ model Project {
   description      String?
   budget           Decimal? @db.Decimal(10,2)
   status           ProjectStatus @default(OPEN)
-  estimated_time   String?
-  deadline         DateTime?
-  is_blocked       Boolean  @default(false)
+  estimated_time      String?
+  deadline            DateTime?
+  assigned_tailor_id  String?
+  is_blocked          Boolean  @default(false)
   blocked_by       String?
   blocked_at       DateTime?
   block_reason     String?
@@ -140,6 +142,7 @@ model Project {
   updated_at       DateTime @updatedAt
 
   designer         User     @relation("DesignerProjects", fields: [designer_id], references: [id])
+  assigned_tailor  User?    @relation("AssignedTailorProjects", fields: [assigned_tailor_id], references: [id])
   design           Design   @relation(fields: [design_id], references: [id])
   requirements     ProjectRequirement[]
   bids             Bid[]

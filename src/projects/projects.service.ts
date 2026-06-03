@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { BidStatus, ProjectStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto, STATUS_OPTIONS } from './dto/create-project.dto';
@@ -154,6 +154,13 @@ export class ProjectsService {
     return { status: 'deleted' };
   }
 
+  private readonly VALID_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
+    [ProjectStatus.OPEN]: [ProjectStatus.IN_PROGRESS, ProjectStatus.CLOSED],
+    [ProjectStatus.IN_PROGRESS]: [ProjectStatus.COMPLETED, ProjectStatus.CLOSED],
+    [ProjectStatus.COMPLETED]: [],
+    [ProjectStatus.CLOSED]: [],
+  };
+
   async close(id: string, designerId: string, status: ProjectStatus) {
     const project = await this.prisma.project.findUnique({ where: { id } });
     if (!project) throw new NotFoundException('Project not found');
@@ -161,7 +168,13 @@ export class ProjectsService {
       throw new UnauthorizedException('Only the owner can close this project');
     }
     if (status !== ProjectStatus.COMPLETED && status !== ProjectStatus.CLOSED) {
-      throw new NotFoundException('Invalid status');
+      throw new BadRequestException('Target status must be COMPLETED or CLOSED');
+    }
+    const allowed = this.VALID_TRANSITIONS[project.status];
+    if (!allowed.includes(status)) {
+      throw new BadRequestException(
+        `Cannot transition project from ${project.status} to ${status}`,
+      );
     }
     return this.prisma.project.update({
       where: { id },
@@ -244,9 +257,35 @@ export class ProjectsService {
     if (decision !== BidStatus.APPROVED && decision !== BidStatus.REJECTED) {
       throw new UnauthorizedException('Invalid decision');
     }
+
+    if (decision === BidStatus.APPROVED) {
+      const [updatedBid] = await this.prisma.$transaction([
+        this.prisma.bid.update({
+          where: { id: bidId },
+          data: { status: BidStatus.APPROVED },
+        }),
+        this.prisma.bid.updateMany({
+          where: {
+            project_id: bid.project_id,
+            id: { not: bidId },
+            status: BidStatus.PENDING,
+          },
+          data: { status: BidStatus.REJECTED },
+        }),
+        this.prisma.project.update({
+          where: { id: bid.project_id },
+          data: {
+            assigned_tailor_id: bid.tailor_id,
+            status: ProjectStatus.IN_PROGRESS,
+          },
+        }),
+      ]);
+      return updatedBid;
+    }
+
     return this.prisma.bid.update({
       where: { id: bidId },
-      data: { status: decision },
+      data: { status: BidStatus.REJECTED },
     });
   }
 
@@ -285,8 +324,8 @@ export class ProjectsService {
     if (project.designer_id !== userId) {
       throw new UnauthorizedException('Only the owner can create requirements');
     }
-    if (project.status !== ProjectStatus.OPEN) {
-      throw new UnauthorizedException('Project requirements can only be added while status is OPEN');
+    if (project.status !== ProjectStatus.OPEN && project.status !== ProjectStatus.IN_PROGRESS) {
+      throw new UnauthorizedException('Project requirements can only be added while status is OPEN or IN_PROGRESS');
     }
     return this.prisma.projectRequirement.create({
       data: {
@@ -309,8 +348,8 @@ export class ProjectsService {
     if (project.designer_id !== userId) {
       throw new UnauthorizedException('Only the owner can update requirements');
     }
-    if (project.status !== ProjectStatus.OPEN) {
-      throw new UnauthorizedException('Project requirements can only be updated while status is OPEN');
+    if (project.status !== ProjectStatus.OPEN && project.status !== ProjectStatus.IN_PROGRESS) {
+      throw new UnauthorizedException('Project requirements can only be updated while status is OPEN or IN_PROGRESS');
     }
     const requirement = await this.prisma.projectRequirement.findUnique({ where: { id: requirementId } });
     if (!requirement || requirement.project_id !== projectId) {
