@@ -20,6 +20,13 @@ class BidDecisionDto {
 export class BidsController {
   constructor(private readonly projectsService: ProjectsService) { }
 
+  @Get('my-bids')
+  @ApiOperation({ summary: 'Get all bids submitted by the current user' })
+  async getMyBids(@Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.projectsService.listBidsByUser(user.id);
+  }
+
   @Get(':bidId')
   @ApiOperation({ summary: 'Get a bid by id (project designer or bid owner)' })
   async getBid(@Param('bidId') bidId: string, @Req() req: Request) {

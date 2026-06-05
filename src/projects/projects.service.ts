@@ -289,6 +289,24 @@ export class ProjectsService {
     });
   }
 
+  async listBidsByUser(userId: string) {
+    return this.prisma.bid.findMany({
+      where: { tailor_id: userId },
+      orderBy: { created_at: 'desc' },
+      include: {
+        project: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            budget: true,
+            designer_id: true,
+          },
+        },
+      },
+    });
+  }
+
   async deleteBid(bidId: string, userId: string) {
     const bid = await this.prisma.bid.findUnique({ where: { id: bidId } });
     if (!bid) throw new NotFoundException('Bid not found');
