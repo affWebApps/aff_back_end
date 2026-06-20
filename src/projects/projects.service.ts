@@ -48,6 +48,50 @@ export class ProjectsService {
     return { total, inProgress, completed };
   }
 
+  private readonly SORTABLE_FIELDS = new Set(['created_at', 'budget', 'title', 'updated_at']);
+
+  async findAll(
+    page = 1,
+    limit = 20,
+    sortBy = 'created_at',
+    sortOrder: 'asc' | 'desc' = 'desc',
+    filters: {
+      status?: ProjectStatus;
+      designerId?: string;
+      isBlocked?: boolean;
+    } = {},
+  ) {
+    const take = Math.max(1, Math.min(100, limit));
+    const pageNum = Math.max(1, page);
+    const skip = (pageNum - 1) * take;
+    const orderField = this.SORTABLE_FIELDS.has(sortBy) ? sortBy : 'created_at';
+
+    const where = {
+      ...(filters.status !== undefined && { status: filters.status }),
+      ...(filters.designerId !== undefined && { designer_id: filters.designerId }),
+      ...(filters.isBlocked !== undefined && { is_blocked: filters.isBlocked }),
+    };
+
+    const [projects, total] = await Promise.all([
+      this.prisma.project.findMany({
+        where,
+        orderBy: { [orderField]: sortOrder },
+        skip,
+        take,
+        include: { files: true },
+      }),
+      this.prisma.project.count({ where }),
+    ]);
+
+    return {
+      data: projects,
+      total,
+      page: pageNum,
+      limit: take,
+      totalPages: Math.ceil(total / take),
+    };
+  }
+
   async create(designerId: string, dto: CreateProjectDto) {
     return this.prisma.project.create({
       data: {

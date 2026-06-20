@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards, BadRequestException } from '@nestjs/common';
 import { ProjectStatus } from '@prisma/client';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
@@ -41,6 +41,37 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Unblock a project (admin)' })
   async unblockProject(@Param('id') id: string) {
     return this.projectsService.unblockProject(id);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'List all projects with pagination and filters' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'sortBy', required: false, enum: ['created_at', 'budget', 'title', 'updated_at'] })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'status', required: false, enum: ProjectStatus })
+  @ApiQuery({ name: 'designerId', required: false, type: String })
+  @ApiQuery({ name: 'isBlocked', required: false, type: Boolean })
+  async findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+    @Query('status') status?: ProjectStatus,
+    @Query('designerId') designerId?: string,
+    @Query('isBlocked') isBlocked?: string,
+  ) {
+    return this.projectsService.findAll(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+      sortBy,
+      sortOrder,
+      {
+        status,
+        designerId,
+        ...(isBlocked !== undefined && { isBlocked: isBlocked === 'true' }),
+      },
+    );
   }
 
   @Post()
