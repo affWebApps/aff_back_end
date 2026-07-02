@@ -110,6 +110,8 @@ GET /v1/assets/textures?mine=|public=
 
 ## Projects (service requests from Designers)
 
+GET /v1/projects – LIST ALL PROJECTS with pagination and filters (page, limit, sortBy, sortOrder, status, designerId, isBlocked). ✅
+
 POST /v1/projects – CREATE A PROJECT - title, description, designId(s), budget, deadline, requirements. ✅
 
 GET /v1/projects/:id - GET A PROJECT BY ID ✅
